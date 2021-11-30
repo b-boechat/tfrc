@@ -1,6 +1,13 @@
 from binwise_combination import median_combination, mean_combination
 from local_sparsity import local_sparsity_method
 
+backup_files_extension = ".bkp"
+backup_folder = "backup"
+audio_folder = "audio"
+
+
+
+
 combination_methods = {
     "median": {
         "name" : "Binwise Median",
@@ -15,6 +22,3 @@ combination_methods = {
         "function" : local_sparsity_method
     }
 }
-
-backup_files_extension = ".bkp"
-audio_folder = "audio"

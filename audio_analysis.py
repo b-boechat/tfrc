@@ -52,13 +52,13 @@ class AudioAnalysis():
             print(f"Combination execution time: {time_f - time_i:.3f}s")
         self.method = combination_methods[method]["name"]
 
-    def save_to_file(self, file):
+    def save_to_file(self, file_path):
         """
         Salva o objeto AudioAnalysis em um arquivo, possibilitando que ele seja recuperado depois sem a necessidade de refazer cálculos.
-        :param file: Nome do arquivo no qual o objeto será salvo.
+        :param file_path: Caminho do arquivo no qual o objeto será salvo.
         :return: None.
         """
-        with open(file, "wb") as output_file:
+        with open(file_path, "wb") as output_file:
             pickle.dump(self, output_file)
 
 

@@ -117,5 +117,6 @@ _*
 .idea/*
 audio/*
 !audio/.gitkeep
+backup/*
+!backup/.gitkeep
 Anaconda*
-*.bkp

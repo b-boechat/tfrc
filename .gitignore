@@ -1,5 +1,5 @@
 # Byte-compiled / optimized / DLL files
-__pycache__/
+*__pycache__/
 *.py[cod]
 *$py.class
 
@@ -119,4 +119,10 @@ audio/*
 !audio/.gitkeep
 backup/*
 !backup/.gitkeep
+dev/_hidden_dev
 Anaconda*
+
+# Cython generated files
+!*.c
+!*.so
+!.pyd

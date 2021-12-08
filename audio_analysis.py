@@ -67,27 +67,35 @@ class AudioAnalysis():
         """
         Calcula o número de pontos e o hop length das STFTs, a partir das resoluções fornecidas para as janelas temporais.
         Os valores calculados são armazenados nos parâmetros correspondentes "n_fft" e "hop_length".
-        O número de pontos utilizado é a maior resolução, aproximada para a próxima potência de 2.
-        O número de pontos utilizado é metade da menor solução, aproximada para a próxima potência de 2.
+        O número de pontos utilizado é o dobro da maior resolução, aproximado para a próxima potência de 2.
+        O hop length utilizado é 1/8 da menor solução, aproximado para a próxima potência de 2.
         :param resolutions: Lista de resoluções fornecidas.
         :return: None.
         """
         # TODO Usar interpolação ou permitir maior flexibilidade na escolha dos parâmetros. Outros tipos de transformadas também.
         max_resolution = max(self.resolutions)
         min_resolution = min(self.resolutions)
-        n_fft = 1
-        while n_fft <= max_resolution:
-            n_fft *= 2
-            if n_fft >= min_resolution:
-                hop_length = n_fft // 2 # Divisão inteira é necessária para evitar TypeError.
+        iter = 1
 
-        self.n_fft = n_fft
-        self.hop_length = hop_length
+        while iter < min_resolution // 8:
+            iter *= 2
 
+        self.hop_length = iter
+        
+        while iter < max_resolution * 2:
+            iter *= 2
+        
+        self.n_fft = iter
+
+        
     def __calculate_tfrs(self):
-        self.tfrs_tensor = np.array([np.abs(librosa.stft(self.audio.audio_data, n_fft=self.n_fft,
+        self.tfrs_tensor = np.array([np.square(np.abs(librosa.stft(self.audio.audio_data, n_fft=self.n_fft,
                                                     hop_length=self.hop_length, win_length=resolution
-                                                    )) for resolution in self.resolutions])
+                                                    ))) for resolution in self.resolutions])
+
+        print(f"{self.resolutions=}")
+        print(f"{self.n_fft=}, {self.hop_length=}")
+        print(self.tfrs_tensor.shape)
 
     def plot(self): #TODO Permitir mais customização na chamada dessa função, unindo ao plot2.
         assert self.tfrs_tensor is not None

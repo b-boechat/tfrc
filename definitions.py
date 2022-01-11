@@ -1,6 +1,6 @@
 import pyximport; pyximport.install(language_level="3")
 
-from lsm import local_sparsity
+from lsm import local_sparsity_wrapper
 from binwise_combination import median_combination, mean_combination
 from local_sparsity import local_sparsity_method_python
 
@@ -23,7 +23,7 @@ combination_methods = {
     },
     "lsm": {
         "name" : "Local Sparsity Method",
-        "function" : local_sparsity
+        "function" : local_sparsity_wrapper
     },
     "lsmold": {
         "name" : "Local Sparsity Method (Old)",

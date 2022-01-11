@@ -15,7 +15,9 @@ class AudioAnalysis():
         self.combined_tfr = None
         self.method = None
 
-        self.__set_stft_params()
+        #self.__set_stft_params()
+        self.hop_length = 256
+        self.n_fft = 1024
         if self.count_time:
             time_i = default_timer()
         self.__calculate_tfrs()
@@ -93,9 +95,9 @@ class AudioAnalysis():
                                                     hop_length=self.hop_length, win_length=resolution
                                                     ))) for resolution in self.resolutions]).astype(np.double)
 
-        print(f"{self.resolutions=}")
-        print(f"{self.n_fft=}, {self.hop_length=}")
-        print(self.tfrs_tensor.shape)
+        #print(f"{self.resolutions=}")
+        #print(f"{self.n_fft=}, {self.hop_length=}")
+        print(f"Shape={self.tfrs_tensor.shape}")
 
     def plot(self): #TODO Permitir mais customização na chamada dessa função, unindo ao plot2.
         assert self.tfrs_tensor is not None

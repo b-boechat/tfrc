@@ -91,7 +91,7 @@ class AudioAnalysis():
     def __calculate_tfrs(self):
         self.tfrs_tensor = np.array([np.square(np.abs(librosa.stft(self.audio.audio_data, n_fft=self.n_fft,
                                                     hop_length=self.hop_length, win_length=resolution
-                                                    ))) for resolution in self.resolutions])
+                                                    ))) for resolution in self.resolutions]).astype(np.double)
 
         print(f"{self.resolutions=}")
         print(f"{self.n_fft=}, {self.hop_length=}")

@@ -1,5 +1,9 @@
+import pyximport; pyximport.install(language_level="3")
+
+from lsm import local_sparsity
 from binwise_combination import median_combination, mean_combination
-from local_sparsity import local_sparsity_method
+from local_sparsity import local_sparsity_method_python
+
 
 backup_files_extension = ".bkp"
 backup_folder = "backup"
@@ -19,6 +23,10 @@ combination_methods = {
     },
     "lsm": {
         "name" : "Local Sparsity Method",
-        "function" : local_sparsity_method
+        "function" : local_sparsity
+    },
+    "lsmold": {
+        "name" : "Local Sparsity Method (Old)",
+        "function" : local_sparsity_method_python
     }
 }

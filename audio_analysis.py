@@ -17,7 +17,7 @@ class AudioAnalysis():
 
         #self.__set_stft_params()
         self.hop_length = 256
-        self.n_fft = 1024
+        self.n_fft = 2048
         if self.count_time:
             time_i = default_timer()
         self.__calculate_tfrs()

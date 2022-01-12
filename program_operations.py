@@ -7,6 +7,7 @@ def generate_tfrc(audio_file_path, t_inicio, t_fim, resolutions,
                   combination_params):
 
     audio_analysis = AudioAnalysis(audio_file_path, t_inicio, t_fim, resolutions, count_time)
+
     audio_analysis.calculate_tfr_combination(combination_method, **combination_params)
     audio_analysis.save_to_file(output_file_path)
 

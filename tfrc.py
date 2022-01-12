@@ -1,7 +1,9 @@
 import argparse
+from joblib.logger import PrintTime
+import pyximport 
 import re
 from program_operations import generate_tfrc, restore_tfrc
-from definitions import backup_files_extension, backup_folder, audio_folder, combination_methods
+from definitions import backup_files_extension, backup_folder, audio_folder
 
 def generate_tfrc_wrapper(args):
     """ Chama a função de combinação de rtfcs com os argumentos passados.
@@ -13,11 +15,14 @@ def generate_tfrc_wrapper(args):
     output_file_path = f"{backup_folder}/{args.output_file}{backup_files_extension}"
 
     if args.combination_params is not None:
-        combination_params_str = "".join(args.combination_params)
+        combination_params_str = " ".join(args.combination_params)
         combination_params = parse_params(combination_params_str)
     else:
         combination_params = dict()
 
+    #if args.pyximport_install:
+    #    print("Here?")
+    #    pyximport.install(language_level="3") # TODO Permitir passar argumentos para o pyximport.
 
     generate_tfrc(audio_file_path=audio_file_path, t_inicio=args.crop_time[0], t_fim=args.crop_time[1], resolutions=args.resolutions,
                   output_file_path=output_file_path,
@@ -40,15 +45,33 @@ def restore_tfrc_wrapper(args):
 
 
 def parse_params(params_str):
-    number_matches = re.findall(r"(\w+)\s*=(\w+)", params_str)
+
+    #print ("str =", params_str)
+
     def parse_with_type(value):
         try:
-            num_value = float(value) # TODO Pode dar type error se for usado como inteiro.
+            num_value = int(value)
             return num_value
         except ValueError:
-            return value
+            try:
+                num_value = float(value)
+                return num_value
+            except ValueError:
+                return value
 
-    params = {match[0] : parse_with_type(match[1]) for match in number_matches}
+    params = dict()
+    pattern = re.compile(r"(\w+)=([^\s]+)")
+
+    while True:
+        match = pattern.match(params_str)
+        if match is None:
+            break
+        params_str = pattern.sub("", params_str, count=1).lstrip()
+        params[match.group(1)] = parse_with_type(match.group(2))
+        
+    #for items in params.items():
+    #    print (items)
+
     return params
 
 
@@ -76,12 +99,14 @@ if __name__ == '__main__':
                                  entendida como \"{backup_files_extension}\", definida na variável \"backup_files_extension\" em \"definitions.py\". 
                                  Os backups são salvos na pasta \"{backup_folder}\", definida na variável \"backup_folder\" em \"definitions.py\"""")
     parser_generate.add_argument("-m", "--method", dest="combination_method", metavar="COMBINATION_METHOD", default="median",
-                        choices=list(combination_methods.keys()),
+                        choices=["median", "mean", "lsm", "lsmold"], # TODO Algum workaround pra poder usar list(combination_methods.keys()), que por enquanto não é possível por causa do pyximport.
                         help="Método de combinação a ser realizado.")
     parser_generate.add_argument("-t", "--time", dest="count_time", action="store_true",
                         help="Se especificado, são exibidos os tempos de cálculo dos espectrogramas e da combinação.")
+    #parser_generate.add_argument("-i", "--install", dest="pyximport_install", action="store_true",   # Não funcionando por enquanto.
+    #                    help="Se especificado, os módulos em Cython são construídos a partir dos arquivos \".pyx\".")
     parser_generate.add_argument("-p", "--params", dest="combination_params", nargs="+",
-                        help="#TODO")
+                        help="Permite passar argumentos para a função de combinação, na forma <chave>=<valor>. Se especificado, precisa ser a última opção na linha de comando.")
     parser_generate.set_defaults(func=generate_tfrc_wrapper)
 
 

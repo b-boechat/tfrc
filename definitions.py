@@ -1,6 +1,14 @@
-import pyximport; pyximport.install(language_level="3")
+#import pyximport; pyximport.install(language_level="3")
+
+
+#def func_not_installed(X, **kwargs): # TODO Criar uma exception para FunctionNotInstalled posteriormente.
+#    raise Exception
+
+import pyximport
+pyximport.install(language_level="3")
 
 from lsm import local_sparsity_wrapper
+
 from binwise_combination import median_combination, mean_combination
 from local_sparsity import local_sparsity_method_python
 

@@ -91,7 +91,7 @@ if __name__ == '__main__':
     parser_generate.add_argument("-c", "--crop", dest="crop_time", type=int, nargs=2, metavar=("inicio", "fim"),
                         default=[None, None],
                         help="Tempo de início e fim (em segundos) demarcando o intervalo analisado.")
-    parser_generate.add_argument("-r", "--resolutions", dest="resolutions", type=int, nargs="+", default=[512, 1024],#, 2048, 4096],
+    parser_generate.add_argument("-r", "--resolutions", dest="resolutions", type=int, nargs="+", default=[512, 1024, 2048],#, 2048, 4096],
                         help="Resoluções utilizadas nas RTFS. Referem-se ao espalhamento da janela temporal.")  # TODO Especificar número de pontos e hop length.
 
     parser_generate.add_argument("-o", dest="output_file", metavar="OUTPUT_FILE", default="backup",

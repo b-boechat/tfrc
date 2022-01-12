@@ -5,7 +5,7 @@
 #    raise Exception
 
 import pyximport
-pyximport.install(language_level="3")
+#pyximport.install(language_level="3")
 
 from lsm import local_sparsity_wrapper
 

@@ -29,8 +29,12 @@ def local_sparsity_wrapper(X, freq_width_energy=41, freq_width_sparsity=17, time
 
 
 @cython.boundscheck(False)
-@cython.wraparound(False) 
-cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t freq_width_sparsity, Py_ssize_t time_width):
+@cython.wraparound(False)
+@cython.nonecheck(False)
+cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t freq_width_sparsity, Py_ssize_t time_width):
+    
+    time_init = default_timer()
+
     cdef:
         Py_ssize_t P = X.shape[0] # Eixo dos espectrogramas
         Py_ssize_t K = X.shape[1] # Eixo das frequências
@@ -45,9 +49,8 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
 
         double epsilon = 1e-10
 
+    NUM_THREADS = P # temporário
     
-    time_init = default_timer()
-
     sparsity_ndarray = np.empty((P, K, M), dtype=np.double)
     energy_ndarray = np.zeros((P, K, M), dtype=np.double) # Matriz de energias precisa ser inicializa com 0 pois é calculada incrementalmente.
     result_ndarray = np.empty((K, M), dtype=np.double)
@@ -64,10 +67,10 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
     hamming_asym_time_ndarray = np.hamming(time_width * 2 - 1)[0:time_width]
 
     # DEBUG
-    #hamming_freq_sparsity_ndarray = 2*np.ones(freq_width_sparsity)
-    #hamming_time_ndarray = 3*np.ones(time_width)
-    #hamming_freq_energy_ndarray = 2*np.ones(freq_width_energy)
-    #hamming_asym_time_ndarray = 10*np.ones(time_width)
+    hamming_freq_sparsity_ndarray = 2*np.ones(freq_width_sparsity)
+    hamming_time_ndarray = 3*np.ones(time_width)
+    hamming_freq_energy_ndarray = 2*np.ones(freq_width_energy)
+    hamming_asym_time_ndarray = 10*np.ones(time_width)
 
 
     cdef double[:] hamming_freq_energy = hamming_freq_energy_ndarray
@@ -75,11 +78,12 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
     cdef double[:] hamming_asym_time = hamming_asym_time_ndarray
     cdef double[:] hamming_time = hamming_time_ndarray
 
-    sort_indices_ndarray = np.empty((K, time_width), dtype=np.intp)
-    cdef Py_ssize_t[:,:] sort_indices = sort_indices_ndarray
+    sort_indices_ndarray = np.empty((NUM_THREADS, K, time_width), dtype=np.intp)
+    cdef Py_ssize_t[:,:,:] sort_indices = sort_indices_ndarray
 
-    aux_horiz_vector_ndarray = np.empty(time_width, dtype=np.double)
-    cdef double[:] aux_horiz_vector = aux_horiz_vector_ndarray
+    aux_horiz_vector_ndarray = np.empty((NUM_THREADS, time_width), dtype=np.double)
+    cdef double[:, :] aux_horiz_vector = aux_horiz_vector_ndarray
+    
 
     ######### {Variáveis para a combinação de vetores ordenados por heap e cálculo do índice de Gini
     cdef:
@@ -90,32 +94,32 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
         Py_ssize_t element_origin, origin_index
 
 
-    heap_elements_ndarray = np.empty(num_vectors, dtype=np.double)
-    heap_origins_ndarray = np.empty(num_vectors, dtype=np.intp)
-    array_indices_ndarray = np.empty(num_vectors, dtype=np.intp)
-    combined_ndarray = np.empty(combined_size, dtype=np.double)
+    heap_elements_ndarray = np.empty((NUM_THREADS, num_vectors), dtype=np.double)
+    heap_origins_ndarray = np.empty((NUM_THREADS, num_vectors), dtype=np.intp)
+    array_indices_ndarray = np.empty((NUM_THREADS, num_vectors), dtype=np.intp)
+    combined_ndarray = np.empty((NUM_THREADS, combined_size), dtype=np.double)
 
-    cdef double[:] heap_elements = heap_elements_ndarray # Heap que armazena o menor elemento não "consumido" de cada vetor.
-    cdef Py_ssize_t[:] heap_origins = heap_origins_ndarray # Armazena o vetor de origem do elemento correspondente da heap.
-    cdef Py_ssize_t[:] array_indices = array_indices_ndarray # Armazena o índice atual na heap de cada vetor.
-    cdef double[:] combined = combined_ndarray # Armazena o vetor combinado de todos os elementos
-
-    cdef double[:, :] arrs # Memview para o espectrograma janelado.
+    cdef double[:, :] heap_elements = heap_elements_ndarray # Heap que armazena o menor elemento não "consumido" de cada vetor.
+    cdef Py_ssize_t[:, :] heap_origins = heap_origins_ndarray # Armazena o vetor de origem do elemento correspondente da heap.
+    cdef Py_ssize_t[:, :] array_indices = array_indices_ndarray # Armazena o índice atual na heap de cada vetor.
+    cdef double[:, :] combined = combined_ndarray # Armazena o vetor combinado de todos os elementos
 
     cdef double combined_size_db, arr_norm, gini
 
     ######### }
 
 
-    #time_sparsity = 0 #DEBUGTIMER
+    #timer_sparsity = 0 #DEBUGTIMER
 
 
     ################################################### Cálculo da Esparsidade Local {{ 
 
     # Itera pelos espectrogramas.
-    for p in range(P):
+    for p in prange(P, nogil=True, num_threads=NUM_THREADS):
         # Itera pelos segmentos temporais.
         for m in range(time_width_lobe, M - time_width_lobe):
+
+            #time_i = default_timer() #DEBUGTIMER
 
             # Itera pelos bins de frequência
             for k in range(K):
@@ -125,7 +129,7 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
 
                 # Reseta o array auxiliar "sort_indices" que guarda os índices das posições originais do vetor horizontal.
                 for i in range(time_width):
-                        sort_indices[k, i] = i
+                        sort_indices[p, k, i] = i
 
                 # Ordena o vetor horizontal. Os índices originais são salvos para que a multiplicação pela janela possa ser desfeita posteriormente.
                 for i_sort in range(1, time_width):
@@ -133,11 +137,12 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
                     j_sort = i_sort - 1
                     while j_sort >= 0 and key < X[p, k, m - time_width_lobe + j_sort]:
                         X[p, k, m - time_width_lobe + j_sort + 1] = X[p, k, m - time_width_lobe + j_sort]
-                        sort_indices[k, j_sort + 1] = sort_indices[k, j_sort]
+                        sort_indices[p, k, j_sort + 1] = sort_indices[p, k, j_sort]
                         j_sort = j_sort - 1
                     X[p, k, m - time_width_lobe + j_sort + 1] = key
-                    sort_indices[k, j_sort + 1] = i_sort
+                    sort_indices[p, k, j_sort + 1] = i_sort
 
+            #timer_sort_vecs = default_timer() - time_i #DEBUGTIMER
             #print("Multiplicou pelo Hamming no tempo e ordenou.") #DEBUGPRINT
             #print_arr(X[p], [0, K, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.MAGENTA) #DEBUGPRINT
             
@@ -164,39 +169,41 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
                 # Inicializa o heap com o primeiro elemento de cada array.
                 for i in range(num_vectors):
                     # Adiciona o elemento no final da heap.
-                    heap_elements[i] = X[p, k - freq_width_sparsity_lobe + i, m - time_width_lobe]
+                    heap_elements[p, i] = X[p, k - freq_width_sparsity_lobe + i, m - time_width_lobe]
                     
-                    heap_origins[i] = i
+                    heap_origins[p, i] = i
 
                     # Inicializa com 0 a posição correspondente do vetor de índices
-                    array_indices[i] = 0
+                    array_indices[p, i] = 0
 
                     # Realiza a restauração da heap (heapify_up) após a inserção.
                     j = i
                     j_parent = (j - 1) // 2
-                    while j_parent >= 0 and heap_elements[j_parent] > heap_elements[j]:
-                        heap_elements[j_parent], heap_elements[j] = heap_elements[j], heap_elements[j_parent]
-                        heap_origins[j_parent], heap_origins[j] = i, heap_origins[j_parent]
+                    while j_parent >= 0 and heap_elements[p, j_parent] > heap_elements[p, j]:
+                        heap_elements[p, j_parent], heap_elements[p, j] = heap_elements[p, j], heap_elements[p, j_parent]
+                        heap_origins[p, j_parent], heap_origins[p, j] = i, heap_origins[p, j_parent]
 
                         j = j_parent
                         j_parent = (j - 1) // 2
+
+                #print(f"heap_elements={heap_elements_ndarray[p]}\nheap_origins={heap_origins_ndarray[p]}\narray_indices={array_indices_ndarray[p]}\n\n\n") #DEBUGPRINT
 
                 # Constrói o vetor combinado, utilizando a heap como fila.
                 for o in range(combined_size):
 
                     # Passa o elemento do topo do heap para o vetor combinado.
-                    combined[o] = heap_elements[0]
+                    combined[p, o] = heap_elements[p, 0]
 
                     # Incrementa a posição de array_indices correspondente ao vetor original do elemento.
-                    element_origin = heap_origins[0]
-                    array_indices[element_origin] += 1
-                    origin_index = array_indices[element_origin]
+                    element_origin = heap_origins[p, 0]
+                    array_indices[p, element_origin] = array_indices[p, element_origin] + 1
+                    origin_index = array_indices[p, element_origin]
 
                     # Coloca o próximo elemento do vetor original no topo do heap. Caso o vetor original já tenha se esgotado, coloca um valor infinito.
                     if origin_index >= len_vectors:
-                        heap_elements[0] = INFINITY
+                        heap_elements[p, 0] = INFINITY
                     else:
-                        heap_elements[0] = X[p, k - freq_width_sparsity_lobe + element_origin, m - time_width_lobe + origin_index]
+                        heap_elements[p, 0] = X[p, k - freq_width_sparsity_lobe + element_origin, m - time_width_lobe + origin_index]
 
                     # Realiza a restauração da heap (heapify_down) após a substituição.
                     j = 0
@@ -204,23 +211,23 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
                     while j_left_child < num_vectors:
                         j_smaller_child = j_left_child
                         j_right_child = j_left_child + 1
-                        if j_right_child < num_vectors and heap_elements[j_right_child] < heap_elements[j_left_child]:
+                        if j_right_child < num_vectors and heap_elements[p, j_right_child] < heap_elements[p, j_left_child]:
                             j_smaller_child = j_right_child
 
-                        if heap_elements[j] <= heap_elements[j_smaller_child]:
+                        if heap_elements[p, j] <= heap_elements[p, j_smaller_child]:
                             break
                         
-                        heap_elements[j], heap_elements[j_smaller_child] = heap_elements[j_smaller_child], heap_elements[j]
-                        heap_origins[j], heap_origins[j_smaller_child] = heap_origins[j_smaller_child], heap_origins[j]
+                        heap_elements[p, j], heap_elements[p, j_smaller_child] = heap_elements[p, j_smaller_child], heap_elements[p, j]
+                        heap_origins[p, j], heap_origins[p, j_smaller_child] = heap_origins[p, j_smaller_child], heap_origins[p, j]
 
                         j = j_smaller_child
                         j_left_child = 2*j + 1
                         
-                    #print(f"k={k}\ncombined={combined_ndarray[0:k+1]}\nheap_elements={heap_elements_ndarray}\nheap_origins={heap_origins_ndarray}\narray_indices={array_indices_ndarray}\n\n\n") #DEBUGPRINT
+                    #print(f"o={o}\ncombined={combined_ndarray[p,0:o+1]}\nheap_elements={heap_elements_ndarray[p]}\nheap_origins={heap_origins_ndarray[p]}\narray_indices={array_indices_ndarray[p]}\n\n\n") #DEBUGPRINT
 
                 ################################### }
 
-                #print("combined =", combined_ndarray) #DEBUGPRINT
+                #print("combined =", combined_ndarray[p]) #DEBUGPRINT
 
                 ################################### Cálculo do índice de Gini {
 
@@ -229,8 +236,8 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
                 
                 combined_size_db = <double> combined_size
                 for i in range(combined_size):
-                    arr_norm = arr_norm + combined[i]
-                    gini = gini - 2*combined[i] * (combined_size - i - 0.5)/combined_size_db
+                    arr_norm = arr_norm + combined[p, i]
+                    gini = gini - 2*combined[p, i] * (combined_size - i - 0.5)/combined_size_db
 
                 gini = 1 + gini/(arr_norm + epsilon)
 
@@ -239,8 +246,7 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
 
                 ################################### }
                 
-                #time_f = default_timer() #DEBUGTIMER
-                #time_sparsity += time_f - time_i #DEBUGTIMER
+                #timer_sparsity += default_timer() - time_i #DEBUGTIMER
 
 
 
@@ -255,9 +261,9 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
             # Desfazer a multiplicação pelo Hamming no tempo, levando em consideração a mudança de índices na ordenação.
             for k in range(K):
                 for i in range(time_width):
-                    aux_horiz_vector[sort_indices[k, i]] = X[p, k, m - time_width_lobe + i] / hamming_time[sort_indices[k, i]]
+                    aux_horiz_vector[p, sort_indices[p, k, i]] = X[p, k, m - time_width_lobe + i] / hamming_time[sort_indices[p, k, i]]
                 for i in range(time_width):
-                    X[p, k, m - time_width_lobe + i] = aux_horiz_vector[i]
+                    X[p, k, m - time_width_lobe + i] = aux_horiz_vector[p, i]
 
             #print("Desmultiplicou pelo Hamming no tempo e desfez a ordenação.") #DEBUGPRINT
             #print_arr(X[p], [0, K, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.BLUE) #DEBUGPRINT
@@ -283,7 +289,7 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
 
     ################################################### }} Combinação por Esparsidade Local
 
-    #time_i_energy = default_timer() #DEBUGTIMER
+    #time_i = default_timer() #DEBUGTIMER
 
     # Itera pelos espectrogramas.
     for p in range(P):
@@ -313,7 +319,7 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
                 for i in range(time_width):
                     X[p, k, m - time_width_lobe + i] /= hamming_asym_time[i]
                     
-    #time_f_energy = default_timer() #DEBUGTIMER
+    #timer_energy = default_timer() - time_i #DEBUGTIMER
 
     # Realiza a compensação de energia.
     for k in range(freq_width_energy_lobe, K - freq_width_energy_lobe): # TODO ajeitar nas bordas.
@@ -337,8 +343,8 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
     #print("Resultado final.")
     #print_arr(result)
 
-    #time_final = default_timer() #DEBUGTIMER
+    #timer_total = default_timer() - time_init  #DEBUGTIMER
     
-    #print(f"\tSparsity = {time_sparsity}\n\tEnergy = {time_f_energy - time_i_energy}\n\tTotal = {time_final - time_init}") #DEBUGTIMER
+    #print(f"\tSort vectors = {timer_sort_vecs}\n\tCombine and sparsity = {timer_sparsity}\n\tEnergy = {timer_energy}\n\tTotal = {timer_total}") #DEBUGTIMER
 
     return result_ndarray

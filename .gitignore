@@ -125,10 +125,10 @@ dev/_hidden_dev
 Anaconda*
 
 # Cython generated files
-!*.c
-!*.html
-!*.so
-!.pyd
+*.c
+*.html
+*.so
+*.pyd
 
 # venv
 

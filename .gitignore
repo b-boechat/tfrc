@@ -126,6 +126,7 @@ Anaconda*
 
 # Cython generated files
 !*.c
+!*.html
 !*.so
 !.pyd
 

@@ -1,25 +1,32 @@
 import numpy as np
 import colorama # Para os prints de debug.
+DEF DEBUGTIMER = 0
+DEF DEBUGPRINT = 0
 
-from timeit import default_timer # DEBUG APENAS
+
+
+IF DEBUGTIMER:
+    from timeit import default_timer
 
 cimport cython
 from cython.parallel import prange
 from libc.math cimport INFINITY
 
 # DEBUGGING
-def print_arr(arr, color_range = None, color = None):
-        colorama.init(autoreset=True)
-        I, J = arr.shape
-        for i in range(I):
-            for j in range(J):
-                if color_range is not None and i >= color_range[0] and i < color_range[1] and j >= color_range[2] and j < color_range[3]:
-                    print("{}".format(color + str(arr[i][j])), end="  ")
-                else:
-                    print("{}".format(str(arr[i][j])), end="  ")
-            print()
 
-        print("\n")
+IF DEBUGPRINT:
+    def print_arr(arr, color_range = None, color = None):
+            colorama.init(autoreset=True)
+            I, J = arr.shape
+            for i in range(I):
+                for j in range(J):
+                    if color_range is not None and i >= color_range[0] and i < color_range[1] and j >= color_range[2] and j < color_range[3]:
+                        print("{}".format(color + str(arr[i][j])), end="  ")
+                    else:
+                        print("{}".format(str(arr[i][j])), end="  ")
+                print()
+
+            print()
 
 
 def local_sparsity_wrapper(X, freq_width_energy=41, freq_width_sparsity=17, time_width=13):
@@ -33,7 +40,8 @@ def local_sparsity_wrapper(X, freq_width_energy=41, freq_width_sparsity=17, time
 @cython.nonecheck(False)
 cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t freq_width_sparsity, Py_ssize_t time_width):
     
-    time_init = default_timer()
+    IF DEBUGTIMER:
+        time_init = default_timer()
 
     cdef:
         Py_ssize_t P = X.shape[0] # Eixo dos espectrogramas
@@ -52,15 +60,14 @@ cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t 
     NUM_THREADS = P # temporário
     
     sparsity_ndarray = np.empty((P, K, M), dtype=np.double)
-    energy_ndarray = np.zeros((P, K, M), dtype=np.double) # Matriz de energias precisa ser inicializa com 0 pois é calculada incrementalmente.
+    energy_ndarray = np.zeros((P, K, M), dtype=np.double) # Matriz de energias precisa ser inicializa com zeros pois é calculada incrementalmente.
     result_ndarray = np.empty((K, M), dtype=np.double)
     
     cdef double[:, :, :] sparsity = sparsity_ndarray
     cdef double[:, :, :] energy = energy_ndarray
     cdef double[:, :] result = result_ndarray
 
-    # Calculate hamming windows on both axises.
-
+    # Calcula as janelas de Hamming utilizadas no algoritmo, separadamente para cada eixo.
     hamming_freq_energy_ndarray = np.hamming(freq_width_energy)
     hamming_freq_sparsity_ndarray = np.hamming(freq_width_sparsity)
     hamming_time_ndarray = np.hamming(time_width)
@@ -108,18 +115,19 @@ cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t 
 
     ######### }
 
-
-    #timer_sparsity = 0 #DEBUGTIMER
+    IF DEBUGTIMER:
+        timer_sparsity = 0
 
 
     ################################################### Cálculo da Esparsidade Local {{ 
 
     # Itera pelos espectrogramas.
-    for p in prange(P, nogil=True, num_threads=NUM_THREADS):
+    for p in range(P):#, nogil=True, num_threads=NUM_THREADS):
         # Itera pelos segmentos temporais.
         for m in range(time_width_lobe, M - time_width_lobe):
-
-            #time_i = default_timer() #DEBUGTIMER
+            
+            IF DEBUGTIMER:
+                time_i = default_timer() 
 
             # Itera pelos bins de frequência
             for k in range(K):
@@ -142,9 +150,11 @@ cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t 
                     X[p, k, m - time_width_lobe + j_sort + 1] = key
                     sort_indices[p, k, j_sort + 1] = i_sort
 
-            #timer_sort_vecs = default_timer() - time_i #DEBUGTIMER
-            #print("Multiplicou pelo Hamming no tempo e ordenou.") #DEBUGPRINT
-            #print_arr(X[p], [0, K, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.MAGENTA) #DEBUGPRINT
+            IF DEBUGTIMER:
+                timer_sort_vecs = default_timer() - time_i 
+            IF DEBUGPRINT:
+                print("Multiplicou pelo Hamming no tempo e ordenou.") 
+                print_arr(X[p], [0, K, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.MAGENTA) 
             
 
             # Itera pelos slices de frequência.    
@@ -153,12 +163,13 @@ cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t 
                 for i in range(time_width):
                     for j in range(freq_width_sparsity):
                         X[p, k - freq_width_sparsity_lobe + j, m - time_width_lobe + i] *= hamming_freq_sparsity[j]
-                        
-                #print("Multiplicou pelo Hamming na frequência.") #DEBUGPRINT
-                #print_arr(X[p], [k - freq_width_energy_lobe, k + freq_width_sparsity_lobe + 1, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.RED) #DEBUGPRINT
 
-                
-                #time_i = default_timer() #DEBUGTIMER
+                IF DEBUGPRINT: 
+                    print("Multiplicou pelo Hamming na frequência.") 
+                    print_arr(X[p], [k - freq_width_energy_lobe, k + freq_width_sparsity_lobe + 1, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.RED) 
+
+                IF DEBUGTIMER: 
+                    time_i = default_timer()
 
 
                 ################################### Combinação dos vetores ordenados {
@@ -186,7 +197,7 @@ cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t 
                         j = j_parent
                         j_parent = (j - 1) // 2
 
-                #print(f"heap_elements={heap_elements_ndarray[p]}\nheap_origins={heap_origins_ndarray[p]}\narray_indices={array_indices_ndarray[p]}\n\n\n") #DEBUGPRINT
+                #print(f"heap_elements={heap_elements_ndarray[p]}\nheap_origins={heap_origins_ndarray[p]}\narray_indices={array_indices_ndarray[p]}\n\n\n") 
 
                 # Constrói o vetor combinado, utilizando a heap como fila.
                 for o in range(combined_size):
@@ -223,11 +234,12 @@ cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t 
                         j = j_smaller_child
                         j_left_child = 2*j + 1
                         
-                    #print(f"o={o}\ncombined={combined_ndarray[p,0:o+1]}\nheap_elements={heap_elements_ndarray[p]}\nheap_origins={heap_origins_ndarray[p]}\narray_indices={array_indices_ndarray[p]}\n\n\n") #DEBUGPRINT
+                    #print(f"o={o}\ncombined={combined_ndarray[p,0:o+1]}\nheap_elements={heap_elements_ndarray[p]}\nheap_origins={heap_origins_ndarray[p]}\narray_indices={array_indices_ndarray[p]}\n\n\n") 
 
                 ################################### }
 
-                #print("combined =", combined_ndarray[p]) #DEBUGPRINT
+                IF DEBUGPRINT:
+                    print("combined =", combined_ndarray[p])
 
                 ################################### Cálculo do índice de Gini {
 
@@ -242,11 +254,14 @@ cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t 
                 gini = 1 + gini/(arr_norm + epsilon)
 
                 sparsity[p, k, m] = gini
-                #print(f"gini = {gini}\n\n\n") #DEBUGPRINT
+
+                IF DEBUGPRINT:
+                    print(f"gini = {gini}", end="\n\n") 
 
                 ################################### }
                 
-                #timer_sparsity += default_timer() - time_i #DEBUGTIMER
+                IF DEBUGTIMER: 
+                    timer_sparsity += default_timer() - time_i 
 
 
 
@@ -255,8 +270,6 @@ cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t 
                     for j in range(freq_width_sparsity):
                         X[p, k - freq_width_sparsity_lobe + j, m - time_width_lobe + i] /= hamming_freq_sparsity[j]
 
-            #print("sort_indices") #DEBUGPRINT
-            #print_arr(sort_indices) #DEBUGPRINT
 
             # Desfazer a multiplicação pelo Hamming no tempo, levando em consideração a mudança de índices na ordenação.
             for k in range(K):
@@ -265,11 +278,13 @@ cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t 
                 for i in range(time_width):
                     X[p, k, m - time_width_lobe + i] = aux_horiz_vector[p, i]
 
-            #print("Desmultiplicou pelo Hamming no tempo e desfez a ordenação.") #DEBUGPRINT
-            #print_arr(X[p], [0, K, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.BLUE) #DEBUGPRINT
+            IF DEBUGPRINT:
+                print("Desmultiplicou pelo Hamming no tempo e desfez a ordenação.") 
+                print_arr(X[p], [0, K, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.BLUE) 
 
-        #print("Sparsity") #DEBUGPRINT
-        #print_arr(sparsity[p]) #DEBUGPRINT
+        IF DEBUGPRINT:
+            print("Sparsity") 
+            print_arr(sparsity[p])
     
     ################################################### }} Cálculo da Esparsidade Local
 
@@ -289,7 +304,11 @@ cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t 
 
     ################################################### }} Combinação por Esparsidade Local
 
-    #time_i = default_timer() #DEBUGTIMER
+    IF DEBUGTIMER:
+        time_i = default_timer() 
+
+    IF DEBUGPRINT:
+        print("\n\n ==== Cálculo da energia ====", end="\n\n\n")
 
     # Itera pelos espectrogramas.
     for p in range(P):
@@ -301,8 +320,9 @@ cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t 
                 for i in range(time_width):
                     X[p, k, m - time_width_lobe + i] *= hamming_asym_time[i]
 
-            #print("Multiplicou pelo Hamming no Tempo.")
-            #print_arr(X[p])
+            IF DEBUGPRINT:
+                print("Multiplicou pelo Hamming no Tempo.")
+                print_arr(X[p], [0, K, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.MAGENTA)
 
             # Itera pelos slices de frequência
             for k in range(freq_width_energy_lobe, K - freq_width_energy_lobe):
@@ -310,16 +330,17 @@ cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t 
                 for i in range(time_width):
                     for j in range(freq_width_energy):
                         energy[p, k, m] += X[p, k - freq_width_energy_lobe + j, m - time_width_lobe + i] * hamming_freq_energy[j]
-
-            #print("Multiplicou pelo Hamming na frequência e calculou a energia.")
-            #print_arr(energy[p])
+                IF DEBUGPRINT:
+                    print("Multiplicou pelo Hamming na frequência e calculou a energia.")
+                    print_arr(energy[p], [k - freq_width_energy_lobe, k + freq_width_energy_lobe + 1, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.RED)
 
             # Desfazer a multiplicação pelo Hamming no tempo.
             for k in range(K):
                 for i in range(time_width):
                     X[p, k, m - time_width_lobe + i] /= hamming_asym_time[i]
-                    
-    #timer_energy = default_timer() - time_i #DEBUGTIMER
+
+    IF DEBUGTIMER:
+        timer_energy = default_timer() - time_i 
 
     # Realiza a compensação de energia.
     for k in range(freq_width_energy_lobe, K - freq_width_energy_lobe): # TODO ajeitar nas bordas.
@@ -332,19 +353,12 @@ cdef local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t 
                     min_energy = energy[p, k, m] 
             result[k, m] *= min_energy/energy_sum
 
-    #for p in range(P):        
-    #    print(f"Sparsity, p={p}.")
-    #    print_arr(sparsity[p])
-    
-    #for p in range(P):        
-    #    print(f"Energy, p={p}.")
-    #    print_arr(energy[p])
+    IF DEBUGPRINT:
+        print("Combinação final.")
+        print_arr(result)
 
-    #print("Resultado final.")
-    #print_arr(result)
-
-    #timer_total = default_timer() - time_init  #DEBUGTIMER
-    
-    #print(f"\tSort vectors = {timer_sort_vecs}\n\tCombine and sparsity = {timer_sparsity}\n\tEnergy = {timer_energy}\n\tTotal = {timer_total}") #DEBUGTIMER
+    if DEBUGTIMER:
+        timer_total = default_timer() - time_init
+        print(f"\tSort vectors = {timer_sort_vecs}\n\tCombine and sparsity = {timer_sparsity}\n\tEnergy = {timer_energy}\n\tTotal = {timer_total}") 
 
     return result_ndarray

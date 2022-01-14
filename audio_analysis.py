@@ -72,7 +72,7 @@ class AudioAnalysis():
         Calcula o número de pontos e o hop length das STFTs, a partir das resoluções fornecidas para as janelas temporais.
         Os valores calculados são armazenados nos parâmetros correspondentes "n_fft" e "hop_length".
         O número de pontos utilizado é o dobro da maior resolução, aproximado para a próxima potência de 2.
-        O hop length utilizado é 1/8 da menor solução, aproximado para a próxima potência de 2.
+        O hop length utilizado é 1/2 da menor solução, aproximado para a próxima potência de 2.
         :param resolutions: Lista de resoluções fornecidas.
         :return: None.
         """
@@ -81,7 +81,7 @@ class AudioAnalysis():
         min_resolution = min(self.resolutions)
         iter = 1
 
-        while iter < min_resolution // 8:
+        while iter < min_resolution // 2: # TODO Na tese é min_resolution // 8
             iter *= 2
 
         self.hop_length = iter

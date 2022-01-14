@@ -4,21 +4,23 @@
 #def func_not_installed(X, **kwargs): # TODO Criar uma exception para FunctionNotInstalled posteriormente.
 #    raise Exception
 
-import pyximport
-#pyximport.install(language_level="3")
+import subprocess
+from binwise_combination import median_combination, mean_combination
+from local_sparsity import local_sparsity_method_python
 
+
+
+
+subprocess.call("python setup.py build_ext --inplace")  # TODO solução temporária até encontrar uma forma melhor de instalar o módulo em Cython por script.
 from lsm import local_sparsity_wrapper
 from lsm2 import local_sparsity_before_par_wrapper
 
-from binwise_combination import median_combination, mean_combination
-from local_sparsity import local_sparsity_method_python
+
 
 
 backup_files_extension = ".bkp"
 backup_folder = "backup"
 audio_folder = "audio"
-
-
 
 
 combination_methods = {

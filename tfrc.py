@@ -1,9 +1,8 @@
 import argparse
-from joblib.logger import PrintTime
-import pyximport 
 import re
 from program_operations import generate_tfrc, restore_tfrc
 from definitions import backup_files_extension, backup_folder, audio_folder
+import subprocess
 
 def generate_tfrc_wrapper(args):
     """ Chama a função de combinação de rtfcs com os argumentos passados.
@@ -20,15 +19,13 @@ def generate_tfrc_wrapper(args):
     else:
         combination_params = dict()
 
-    #if args.pyximport_install:
-    #    print("Here?")
-    #    pyximport.install(language_level="3") # TODO Permitir passar argumentos para o pyximport.
-
     generate_tfrc(audio_file_path=audio_file_path, t_inicio=args.crop_time[0], t_fim=args.crop_time[1], resolutions=args.resolutions,
                   output_file_path=output_file_path,
                   combination_method=args.combination_method,
                   count_time=args.count_time,
                   combination_params=combination_params)
+
+    
 
 
 def restore_tfrc_wrapper(args):
@@ -40,9 +37,6 @@ def restore_tfrc_wrapper(args):
     input_file_path = f"{backup_folder}/{args.input_file}{backup_files_extension}"
 
     restore_tfrc(input_file_path=input_file_path)
-
-
-
 
 def parse_params(params_str):
 
@@ -69,14 +63,12 @@ def parse_params(params_str):
         params_str = pattern.sub("", params_str, count=1).lstrip()
         params[match.group(1)] = parse_with_type(match.group(2))
         
-    #for items in params.items():
-    #    print (items)
-
     return params
 
 
 
-if __name__ == '__main__':
+
+def main():
 
     parser = argparse.ArgumentParser(description="Interface para o cálculo, armazenamento e visualização de combinações de representações tempo-frequenciais.")
 
@@ -103,8 +95,8 @@ if __name__ == '__main__':
                         help="Método de combinação a ser realizado.")
     parser_generate.add_argument("-t", "--time", dest="count_time", action="store_true",
                         help="Se especificado, são exibidos os tempos de cálculo dos espectrogramas e da combinação.")
-    #parser_generate.add_argument("-i", "--install", dest="pyximport_install", action="store_true",   # Não funcionando por enquanto.
-    #                    help="Se especificado, os módulos em Cython são construídos a partir dos arquivos \".pyx\".")
+    #parser_generate.add_argument("-i", "--install", dest="install", action="store_true", 
+    #                    help="Provisório. Se especificado, os módulos em Cython são construídos a partir dos arquivos \".pyx\".")
     parser_generate.add_argument("-p", "--params", dest="combination_params", nargs="+",
                         help="Permite passar argumentos para a função de combinação, na forma <chave>=<valor>. Se especificado, precisa ser a última opção na linha de comando.")
     parser_generate.set_defaults(func=generate_tfrc_wrapper)
@@ -128,3 +120,6 @@ if __name__ == '__main__':
         args.func(args)
     else:
         parser.print_usage()
+
+if __name__ == '__main__':
+    main()

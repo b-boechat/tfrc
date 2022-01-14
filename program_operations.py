@@ -17,5 +17,5 @@ def generate_tfrc(audio_file_path, t_inicio, t_fim, resolutions,
 
 def restore_tfrc(input_file_path):
     audio_analysis = AudioAnalysis.from_file(input_file_path)
-    audio_analysis.plot()
-    #audio_analysis.plot2()
+    #audio_analysis.plot()
+    audio_analysis.plot2()

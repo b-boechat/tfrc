@@ -52,6 +52,8 @@ class AudioAnalysis():
         if self.count_time:
             time_f = default_timer()
             print(f"Combination execution time: {time_f - time_i:.3f}s")
+
+        self.combined_tfr *= self.audio.energy/np.sum(self.combined_tfr, axis=0)
         self.method = combination_methods[method]["name"]
 
     def save_to_file(self, file_path):
@@ -91,12 +93,15 @@ class AudioAnalysis():
 
         
     def __calculate_tfrs(self):
-        self.tfrs_tensor = np.array([np.square(np.abs(librosa.stft(self.audio.audio_data, n_fft=self.n_fft,
-                                                    hop_length=self.hop_length, win_length=resolution
-                                                    ))) for resolution in self.resolutions]).astype(np.double)
 
-        #print(f"{self.resolutions=}")
-        #print(f"{self.n_fft=}, {self.hop_length=}")
+        self.tfrs_tensor = np.array([librosa.stft(self.audio.audio_data, n_fft=self.n_fft,
+                                                    hop_length=self.hop_length, win_length=resolution
+                                                    ) for resolution in self.resolutions])
+
+        self.tfrs_tensor *= self.audio.energy / np.linalg.norm(self.tfrs_tensor, axis=(1, 2), keepdims=True)
+
+        self.tfrs_tensor = np.square(np.abs(self.tfrs_tensor)).astype(np.double)
+
         print(f"Shape={self.tfrs_tensor.shape}")
 
     def plot(self): #TODO Permitir mais customização na chamada dessa função, unindo ao plot2.
@@ -165,6 +170,7 @@ class Audio:
         self.t_inicio = t_inicio
         self.t_fim = t_fim
         self.audio_data, self.sample_rate = self.__load_audio(audio_file_path, t_inicio, t_fim)
+        self.energy = np.linalg.norm(self.audio_data)
 
     def __load_audio(self, audio_file_path, t_inicio, t_fim):
         if t_inicio and t_fim:

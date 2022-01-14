@@ -12,8 +12,8 @@ from local_sparsity import local_sparsity_method_python
 
 
 subprocess.call("python setup.py build_ext --inplace")  # TODO solução temporária até encontrar uma forma melhor de instalar o módulo em Cython por script.
+from lsm_par import local_sparsity_parallel_wrapper
 from lsm import local_sparsity_wrapper
-from lsm2 import local_sparsity_before_par_wrapper
 
 
 
@@ -34,14 +34,15 @@ combination_methods = {
     },
     "lsm": {
         "name" : "Local Sparsity Method",
+        "function" : local_sparsity_before_par_wrapper
+    },
+    "lsm_par": {
+        "name" : "Local Sparsity Method (parallel)",
         "function" : local_sparsity_wrapper
     },
-    "lsmold": {
-        "name" : "Local Sparsity Method (Old)",
+    "lsm_pure_python": {
+        "name" : "Local Sparsity (Pure Python)",
         "function" : local_sparsity_method_python
-    },
-    "lsmbeforepar": {
-        "name" : "Local Sparsity Method (before changes for parallelization)",
-        "function" : local_sparsity_before_par_wrapper
     }
+    
 }

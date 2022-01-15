@@ -53,7 +53,10 @@ class AudioAnalysis():
             time_f = default_timer()
             print(f"Combination execution time: {time_f - time_i:.3f}s")
 
-        self.combined_tfr *= self.audio.energy/np.sum(self.combined_tfr, axis=0)
+        #print(f"Soma = {np.sum(self.combined_tfr, axis=None)}")
+        #print(f"Fator = {self.audio.energy/np.sum(self.combined_tfr, axis=None)}")
+
+        self.combined_tfr *= self.audio.energy/np.sum(self.combined_tfr, axis=None)
         self.method = combination_methods[method]["name"]
 
     def save_to_file(self, file_path):

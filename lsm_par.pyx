@@ -10,7 +10,7 @@ IF DEBUGTIMER:
 
 cimport cython
 from cython.parallel import prange
-from libc.math cimport INFINITY
+from libc.math cimport INFINITY, pow
 
 # DEBUGGING
 
@@ -29,16 +29,16 @@ IF DEBUGPRINT:
             print()
 
 
-def local_sparsity_parallel_wrapper(X, freq_width_energy=41, freq_width_sparsity=17, time_width=13):
+def local_sparsity_parallel_wrapper(X, freq_width_energy=41, freq_width_sparsity=17, time_width=13, zeta=-1):
     #print(f"freq_width_sparsity = {freq_width_sparsity}\nfreq_width_energy = {freq_width_energy}\ntime_width = {time_width}")
-    return local_sparsity_parallel(X, freq_width_energy, freq_width_sparsity, time_width)
+    return local_sparsity_parallel(X, freq_width_energy, freq_width_sparsity, time_width, zeta)
 
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cdef local_sparsity_parallel(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t freq_width_sparsity, Py_ssize_t time_width):
+cdef local_sparsity_parallel(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py_ssize_t freq_width_sparsity, Py_ssize_t time_width, double zeta):
     
     IF DEBUGTIMER:
         time_init = default_timer()
@@ -53,7 +53,7 @@ cdef local_sparsity_parallel(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py
         Py_ssize_t time_width_lobe = (time_width-1)//2
         Py_ssize_t p, k, m, i, j, i_sort, j_sort
 
-        double key, max_sparsity, min_energy, energy_sum
+        double key, max_sparsity, sparsity_product, sparsity_ratio, sparsity_ratio_sum, min_local_energy, choosen_tfr_local_energy
 
         double epsilon = 1e-10
 
@@ -61,7 +61,7 @@ cdef local_sparsity_parallel(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py
     
     sparsity_ndarray = np.empty((P, K, M), dtype=np.double)
     energy_ndarray = np.zeros((P, K, M), dtype=np.double) # Matriz de energias precisa ser inicializa com zeros pois é calculada incrementalmente.
-    result_ndarray = np.empty((K, M), dtype=np.double)
+    result_ndarray = np.zeros((K, M), dtype=np.double) # Matriz resultado precisa ser inicializada com 0 no Smoothed Local Sparsity.
     
     cdef double[:, :, :] sparsity = sparsity_ndarray
     cdef double[:, :, :] energy = energy_ndarray
@@ -122,7 +122,7 @@ cdef local_sparsity_parallel(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py
     ################################################### Cálculo da Esparsidade Local {{ 
 
     # Itera pelos espectrogramas.
-    for p in range(P):#, nogil=True, num_threads=NUM_THREADS):
+    for p in prange(P, nogil=True, num_threads=NUM_THREADS):
         # Itera pelos segmentos temporais.
         for m in range(time_width_lobe, M - time_width_lobe):
             
@@ -288,29 +288,6 @@ cdef local_sparsity_parallel(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py
     
     ################################################### }} Cálculo da Esparsidade Local
 
-    if DEBUGTIMER:
-        time_i = default_timer()
-
-    ################################################### Combinação por Esparsidade Local {{
-
-    
-
-    # Em cada ponto, seleciona para o espectrograma combinado o valor do espectrograma de menor esparsidade local.
-    for k in range(K):
-        for m in range(M):
-            max_sparsity = -1.0
-            for p in range(P):
-                if sparsity[p, k, m] > max_sparsity:
-                    result[k, m] = X[p, k, m]
-                    max_sparsity = sparsity[p, k, m]
-
-
-
-    ################################################### }} Combinação por Esparsidade Local
-
-    if DEBUGTIMER:
-        time_spars_comb = default_timer() - time_i
-
     IF DEBUGPRINT:
         print("\n\n ==== Cálculo da energia ====", end="\n\n\n")
     
@@ -355,21 +332,50 @@ cdef local_sparsity_parallel(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py
         timer_energy = default_timer() - time_i 
         time_i = default_timer()
 
-    ################################################### Compensação por Energia Local {{
+    ################################################### Combinação por Esparsidade Local e compensação por Energia Local {{
+ 
+    ################################################### Combinação por Esparsidade Local e compensação por Energia Local {{
+ 
+        
+    if zeta < 0: # Local Sparsity Method (not smoothed)
+        for k in range(freq_width_energy_lobe, K - freq_width_energy_lobe): 
+            for m in range(time_width_lobe, M - time_width_lobe):
+                max_sparsity = -1.0
+                min_local_energy = INFINITY
+                for p in range(P):
+                    if sparsity[p, k, m] > max_sparsity:
+                        result[k, m] = X[p, k, m]
+                        max_sparsity = sparsity[p, k, m]
+                        choosen_tfr_local_energy = energy[p, k, m]      
+                    if energy[p, k, m] < min_local_energy:
+                        min_local_energy = energy[p, k, m]
+                result[k, m] *= min_local_energy/choosen_tfr_local_energy
 
-    # Realiza a compensação de energia.
-    for k in range(freq_width_energy_lobe, K - freq_width_energy_lobe): # TODO ajeitar nas bordas.
-        for m in range(time_width_lobe, M - time_width_lobe):
-            min_energy = INFINITY
-            energy_sum = epsilon
-            for p in range(P):
-                energy_sum += energy[p, k, m]
-                if energy[p, k, m] < min_energy:
-                    min_energy = energy[p, k, m] 
-            result[k, m] *= min_energy/energy_sum
+    else: # Smoothed Local Sparsity Method
 
-    ################################################### }} Compensação por Energia Local
+        # Itera pelos bins de frequência.
+        for k in range(freq_width_energy_lobe, K - freq_width_energy_lobe): 
+            # Itera pelos segmentos temporais.
+            for m in range(time_width_lobe, M - time_width_lobe):
+                # Calcula a menor energia local e o produto de esparsidades locais, iterando pelos espectrogramas.
+                min_local_energy = INFINITY
+                sparsity_product = 1.0
+                for p in range(P):
+                    sparsity_product *= sparsity[p, k, m]
+                    if energy[p, k, m] < min_local_energy:
+                        min_local_energy = energy[p, k, m]
 
+                # Itera pelos espectrogramas novamente, calculando a razão de esparsidade e computando o resultado incrementalmente.
+                sparsity_ratio_sum = epsilon
+                for p in range(P):
+                    sparsity_ratio = pow(sparsity[p, k, m] * sparsity[p, k, m] / sparsity_product, zeta) # Dois fatores sparsity[p, k, m] para removê-lo do produto.
+                    sparsity_ratio_sum += sparsity_ratio 
+                    result[k, m] += X[p, k, m] * sparsity_ratio * energy[p, k, m] / min_local_energy
+
+                # Divide o resultado pela soma das razões de esparsidade. 
+                result[k, m] /= sparsity_ratio_sum 
+
+    ################################################### }} Combinação por Esparsidade Local e compensação por Energia Local
 
     IF DEBUGPRINT:
         print("Combinação final.")
@@ -377,8 +383,8 @@ cdef local_sparsity_parallel(double[:,:,::1] X, Py_ssize_t freq_width_energy, Py
 
     if DEBUGTIMER:
         time_f = default_timer()
-        timer_energy_compens = time_f - time_i
+        timer_combination = time_f - time_i
         timer_total = time_f - time_init
-        print(f"""\tSort vectors = {timer_sort_vecs}\n\tMerge and calc sparsity = {timer_sparsity}\n\tCombine spectrograms = {time_spars_comb}\n\tEnergy = {timer_energy}\n\tTotal = {timer_total}""") 
+        print(f"""\tSort vectors = {timer_sort_vecs}\n\tMerge and calc sparsity = {timer_sparsity}\n\tEnergy = {timer_energy}\n\tCombination = {timer_combination}\n\tTotal = {timer_total}""") 
 
     return result_ndarray

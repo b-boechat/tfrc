@@ -3,14 +3,14 @@ from Cython.Build import cythonize
 
 ext_modules = [
     Extension(
-        "lsm",
-        ["lsm.pyx"],
+        "lsm_par",
+        ["lsm_par.pyx"],
         extra_compile_args=['/openmp']
         #extra_link_args=['-fopenmp'],
     ),
     Extension(
-        "lsm2",
-        ["lsm2.pyx"],
+        "lsm",
+        ["lsm.pyx"],
     )
 ]
 

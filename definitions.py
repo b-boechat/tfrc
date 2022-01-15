@@ -34,11 +34,11 @@ combination_methods = {
     },
     "lsm": {
         "name" : "Local Sparsity Method",
-        "function" : local_sparsity_before_par_wrapper
+        "function" : local_sparsity_wrapper
     },
     "lsm_par": {
         "name" : "Local Sparsity Method (parallel)",
-        "function" : local_sparsity_wrapper
+        "function" : local_sparsity_parallel_wrapper
     },
     "lsm_pure_python": {
         "name" : "Local Sparsity (Pure Python)",

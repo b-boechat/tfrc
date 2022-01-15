@@ -91,7 +91,7 @@ def main():
                                  entendida como \"{backup_files_extension}\", definida na variável \"backup_files_extension\" em \"definitions.py\". 
                                  Os backups são salvos na pasta \"{backup_folder}\", definida na variável \"backup_folder\" em \"definitions.py\"""")
     parser_generate.add_argument("-m", "--method", dest="combination_method", metavar="COMBINATION_METHOD", default="median",
-                        choices=["median", "mean", "lsm", "lsmold", "lsmbeforepar"], # TODO Algum workaround pra poder usar list(combination_methods.keys()), que por enquanto não é possível por causa do pyximport.
+                        choices=["median", "mean", "lsm", "lsm_pure_python", "lsm_par"], # TODO Algum workaround pra poder usar list(combination_methods.keys()), que por enquanto não é possível por causa do pyximport.
                         help="Método de combinação a ser realizado.")
     parser_generate.add_argument("-t", "--time", dest="count_time", action="store_true",
                         help="Se especificado, são exibidos os tempos de cálculo dos espectrogramas e da combinação.")

@@ -117,7 +117,7 @@ cdef local_sparsity(double[:,:,:] X, Py_ssize_t freq_width_energy, Py_ssize_t fr
     ################################################### Cálculo da Esparsidade Local {{ 
 
     # Itera pelos espectrogramas.
-    for p in range(P):
+    for p in prange(P, nogil=True):
         # Itera pelos segmentos temporais.
         for m in range(time_width_lobe, M - time_width_lobe):
 

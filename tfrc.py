@@ -1,8 +1,7 @@
 import argparse
 import re
 from program_operations import generate_tfrc, restore_tfrc
-from definitions import backup_files_extension, backup_folder, audio_folder
-import subprocess
+from definitions import combination_methods, backup_files_extension, backup_folder, audio_folder
 
 def generate_tfrc_wrapper(args):
     """ Chama a função de combinação de rtfcs com os argumentos passados.
@@ -91,7 +90,8 @@ def main():
                                  entendida como \"{backup_files_extension}\", definida na variável \"backup_files_extension\" em \"definitions.py\". 
                                  Os backups são salvos na pasta \"{backup_folder}\", definida na variável \"backup_folder\" em \"definitions.py\"""")
     parser_generate.add_argument("-m", "--method", dest="combination_method", metavar="COMBINATION_METHOD", default="median",
-                        choices=["median", "mean", "lsm", "lsm_pure_python", "lsm_par"], # TODO Algum workaround pra poder usar list(combination_methods.keys()), que por enquanto não é possível por causa do pyximport.
+                        choices=list(combination_methods.keys()), # TODO É possível deixar assim enquanto a chamada para subprocess.call não está sendo feita no definitions.py
+                        #choices=["median", "mean", "lsm", "lsm_pure_python", "lsm_par", "lsm_feulo"], # TODO Algum workaround pra poder usar list(combination_methods.keys()), que por enquanto não é possível por causa do pyximport.
                         help="Método de combinação a ser realizado.")
     parser_generate.add_argument("-t", "--time", dest="count_time", action="store_true",
                         help="Se especificado, são exibidos os tempos de cálculo dos espectrogramas e da combinação.")

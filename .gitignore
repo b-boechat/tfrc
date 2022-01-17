@@ -133,3 +133,8 @@ Anaconda*
 # venv
 
 .tfrcenv/
+
+# Implementações em Python puro do Guilherme Feulo
+
+noname/*
+!noname/sls.py

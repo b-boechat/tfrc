@@ -7,11 +7,12 @@
 import subprocess
 from binwise_combination import median_combination, mean_combination
 from local_sparsity import local_sparsity_method_python
+from feulo_integration import feulo_spectrogram_local_sparsity_wrapper
 
 
 
 
-subprocess.call("python setup.py build_ext --inplace")  # TODO solução temporária até encontrar uma forma melhor de instalar o módulo em Cython por script.
+#subprocess.call("python setup.py build_ext --inplace")  # TODO solução temporária até encontrar uma forma melhor de instalar o módulo em Cython por script.
 from lsm_par import local_sparsity_parallel_wrapper
 from lsm import local_sparsity_wrapper
 
@@ -43,6 +44,9 @@ combination_methods = {
     "lsm_pure_python": {
         "name" : "Local Sparsity (Pure Python)",
         "function" : local_sparsity_method_python
+    },
+    "lsm_feulo": {
+        "name" : "Local Sparsity (Feulo)",
+        "function" : feulo_spectrogram_local_sparsity_wrapper
     }
-    
 }

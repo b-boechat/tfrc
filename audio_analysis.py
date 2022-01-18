@@ -7,7 +7,40 @@ from definitions import combination_methods
 from timeit import default_timer
 
 class AudioAnalysis():
-    def __init__(self, audio_file_path, t_inicio, t_fim, resolutions, count_time):
+    """ Classe que instancia uma análise de sinal de áudio por combinações de representações tempo-frequenciais, armazenando as informações pertinentes.
+
+        Atributos:
+            tfrs_tensor (ndarray): Array 3D contendo o tensor de RTFs computados para o áudio. Tem dimensões de Representações x Frequência x Tempo 
+            combined_tfr (ndarray): Caso self.calculate_tfr_combination() tenha sido chamada, contém o Array 2D com a RTF combinada para o áudio, nas dimensões Frequência x Tempo. Caso contrário, contém None.
+            method (String): Caso self.calculate_tfr_combination() tenha sido chamada, contém a String que representa o método usado na combinação, de acordo com o dicionário combination_methods. Caso contrário, contém None.
+            audio (AudioAnalysis.Audio): Objeto contendo as informações pertinentes ao sinal de áudio no tempo.
+                audio.data (ndarray): Vetor numérico 1D representando o áudio em forma .wav
+                audio.energy (double): Energia do áudio, calculada como np.linalg.norm(self.audio_data)
+                audio.file_path (String): Caminho do áudio analisado, conforme fornecido na inicialização do objeto.
+                audio.t_inicio (Number): Tempo inicial analisado do áudio. Se "None", equivale ao início do áudio.
+                audio.t_fim (Number): Tempo final analisado do áudio. Se "None", equivale ao fim do áudio.
+            resolutions (List): Lista contendo as resoluções usadas no cálculo das RTFs.
+            count_time (Boolean): Se verdadeiro, o tempo de cálculo das combinações, caso self.calculate_tfr_combinations() seja chamada, é calculado e mostrado.
+
+        Métodos:
+            AudioAnalysis(audio_file_path, t_inicio, t_fim, resolutions, count_time): Instancia um objeto AudioAnalysis a partir de informações sobre o áudio e sobre as representações tempo-frequenciais (RTF).
+            AudioAnalysis.from_file(file): Instancia um objeto AudioAnalysis a partir de uma análise previamente salva pela função self.save_to_file(file).
+            self.calculate_tfr_combinations(method, **kwags): Calcula e salva a combinação de RTFs usando o método de combinação fornecida e as RTFs já calculadas.
+            self.save_to_file(file_path): Salva o objeto atual AudioAnalysis no arquivo especificado. 
+            self.plot(): Plota as RTFs e a RTF combinada, em uma única figure. Funciona melhor para len(self.resolutions) = 3. Não pode ser chamada antes de self.calculate_tfr_combinations().
+            self.plot2(): Plota as RTFs e a RTF combinada, em figures separadas. Não pode ser chamada antes de self.calculate_tfr_combinations().
+    """
+
+    def __init__(self, audio_file_path, t_inicio=None, t_fim=None, resolutions=[512, 1024, 2048], count_time=False):
+        """
+        Instancia um objeto AudioAnalysis a partir de informações sobre o áudio e sobre as representações tempo-frequenciais (RTF).
+
+        :param audio_file_path (String): Caminho (absoluto ou relativo) para o áudio no formato .wav
+        :param t_inicio (Number): Tempo inicial a ser analisado do áudio. Se especificado "None", equivale ao início do áudio. Default: "None" 
+        :param t_fim (Number): Tempo final a ser analisado do áudio. Se especificado "None", equivale ao fim do áudio. Default: "None" 
+        :param resolutions (List): Lista contendo as resoluções (largura da janela) a serem calculadas de DFT. São usadas também para calcular n_fft e hop_length. Futuramente, será adicionado suporte para outros tipos de transformadas. Default: [512, 1024, 2048]
+        :param count_time (Boolean): Se verdadeiro, o tempo de cálculo das RTFs (e das combinações, caso self.calculate_tfr_combinations() seja chamada posteriormente) é calculado e mostrado. Default: False
+        """
         self.audio = Audio(audio_file_path, t_inicio, t_fim)
         self.resolutions = resolutions
         self.count_time = count_time
@@ -28,7 +61,7 @@ class AudioAnalysis():
     @classmethod
     def from_file(cls, file):
         """
-        Instancia um objeto AudioAnalysis a partir da leitura de um arquivo binário, gravado previamente com o método save_to_file.
+        Instancia um objeto AudioAnalysis a partir de uma análise previamente salva pela função self.save_to_file(file).
         Utiliza a biblioteca pickle.
         :param file: Nome do arquivo com o objeto gravado.
         :return: None.
@@ -39,7 +72,7 @@ class AudioAnalysis():
 
     def calculate_tfr_combination(self, method, **kwargs): #TODO Futuramente permitir guarda múltiplos tipos de combinações diferentes.
         """
-        Calcula e salva a combinação de RTFs usando o método de combinação fornecida, no atributo "combined_tfr".
+        Calcula e salva a combinação de RTFs usando o método de combinação fornecida e as RTFs já calculadas.
         Também salva o nome do método usado no atributo "method", para formatação do plot.
 
         :param method: String que contém entrada para algum método em "combination_methods", no arquivo "definitions.py".
@@ -61,7 +94,7 @@ class AudioAnalysis():
 
     def save_to_file(self, file_path):
         """
-        Salva o objeto AudioAnalysis em um arquivo, possibilitando que ele seja recuperado depois sem a necessidade de refazer cálculos.
+        Salva o objeto atual AudioAnalysis no arquivo especificado.
         :param file_path: Caminho do arquivo no qual o objeto será salvo.
         :return: None.
         """
@@ -105,31 +138,32 @@ class AudioAnalysis():
 
         self.tfrs_tensor = np.square(np.abs(self.tfrs_tensor)).astype(np.double)
 
-        print(f"Shape={self.tfrs_tensor.shape}")
+        print(f"tfrs tensor shape={self.tfrs_tensor.shape}")
 
-    def plot(self): #TODO Permitir mais customização na chamada dessa função, unindo ao plot2.
+    def plot(self): #TODO Ajeitar essa função
         assert self.tfrs_tensor is not None
         assert self.combined_tfr is not None # TODO transformar asserts em erros.
         assert self.method is not None
 
-        num_plots = len(self.resolutions)
+        num_plots = len(self.resolutions) + 1
         lines, cols, ax_i = AudioAnalysis.__get_iterable_axis_indices(num_plots)
         fig, ax = plt.subplots(lines, cols)
-        for i in range(num_plots):
+        for i in range(num_plots - 1):
             img = librosa.display.specshow(librosa.amplitude_to_db(self.tfrs_tensor[i], ref=np.max),
                                            y_axis='log', x_axis='time',
                                            hop_length=self.hop_length, sr=self.audio.sample_rate,
                                            ax=ax[ax_i[i][0], ax_i[i][1]])
-            ax[ax_i[i][0], ax_i[i][1]].set_title("Spectrogram for {} with window length of {}".format(self.audio.audio_file_path, self.resolutions[i]))
+            ax[ax_i[i][0], ax_i[i][1]].set_title("Spectrogram for {} with window length of {}".format(self.audio.file_path, self.resolutions[i]))
             fig.colorbar(img, ax=ax[ax_i[i][0], ax_i[i][1]], format="%+2.0f dB")
 
-        fig2, ax2 = plt.subplots()
+        i = num_plots - 1
+
         img = librosa.display.specshow(librosa.amplitude_to_db(self.combined_tfr, ref=np.max),
                                        y_axis='log', x_axis='time',
                                        hop_length=self.hop_length, sr=self.audio.sample_rate,
-                                       ax=ax2)
-        ax2.set_title("Combination of spectrograms using {}".format(self.method))
-        fig.colorbar(img, ax=ax2, format="%+2.0f dB")
+                                       ax=ax[ax_i[i][0], ax_i[i][1]])
+        ax[ax_i[i][0], ax_i[i][1]].set_title("Combination of spectrograms using {}".format(self.method))
+        fig.colorbar(img, ax=ax[ax_i[i][0], ax_i[i][1]], format="%+2.0f dB")
 
         plt.show()
 
@@ -169,7 +203,7 @@ class AudioAnalysis():
 
 class Audio:
     def __init__(self, audio_file_path, t_inicio, t_fim):
-        self.audio_file_path = audio_file_path
+        self.file_path = audio_file_path
         self.t_inicio = t_inicio
         self.t_fim = t_fim
         self.audio_data, self.sample_rate = self.__load_audio(audio_file_path, t_inicio, t_fim)

@@ -6,7 +6,6 @@
 
 import subprocess
 from binwise_combination import median_combination, mean_combination
-from local_sparsity import local_sparsity_method_python
 from feulo_integration import feulo_spectrogram_local_sparsity_wrapper
 
 
@@ -40,10 +39,6 @@ combination_methods = {
     "lsm_par": {
         "name" : "Local Sparsity Method (parallel)",
         "function" : local_sparsity_parallel_wrapper
-    },
-    "lsm_pure_python": {
-        "name" : "Local Sparsity (Pure Python)",
-        "function" : local_sparsity_method_python
     },
     "lsm_feulo": {
         "name" : "Local Sparsity (Feulo)",

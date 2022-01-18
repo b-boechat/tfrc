@@ -56,7 +56,7 @@ class AudioAnalysis():
         #print(f"Soma = {np.sum(self.combined_tfr, axis=None)}")
         #print(f"Fator = {self.audio.energy/np.sum(self.combined_tfr, axis=None)}")
 
-        #self.combined_tfr *= self.audio.energy/np.sum(self.combined_tfr, axis=None)
+        self.combined_tfr *= self.audio.energy/np.sum(self.combined_tfr, axis=None)
         self.method = combination_methods[method]["name"]
 
     def save_to_file(self, file_path):

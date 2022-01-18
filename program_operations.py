@@ -6,7 +6,7 @@ def print_arr(arr): # Just for debugging
         M, N = arr.shape
         for m in range(M):
             for n in range(N):
-                print("{:.4f}".format(arr[m][n]), end="  ")
+                print("{:.10f}".format(arr[m][n]), end="  ")
             print()
         print()
 

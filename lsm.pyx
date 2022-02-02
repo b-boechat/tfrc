@@ -27,7 +27,7 @@ IF DEBUGPRINT:
             print("\n")
 
 
-def local_sparsity_wrapper(X, freq_width_energy=41, freq_width_sparsity=17, time_width=13, zeta = -1.0):
+def local_sparsity_wrapper(X, freq_width_energy=41, freq_width_sparsity=17, time_width=13, zeta = 10):
     #print(f"freq_width_sparsity = {freq_width_sparsity}\nfreq_width_energy = {freq_width_energy}\ntime_width = {time_width}\nzeta = {zeta}")
     return local_sparsity(X, freq_width_energy, freq_width_sparsity, time_width, zeta)
 

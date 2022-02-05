@@ -138,3 +138,6 @@ Anaconda*
 
 noname/*
 !noname/sls.py
+
+TFR_Methods/*
+!TFR_Methods/SLS/spectrogram_comb_local_sparsity.m

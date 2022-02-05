@@ -31,7 +31,7 @@ class AudioAnalysis():
             self.plot2(): Plota as RTFs e a RTF combinada, em figures separadas. Não pode ser chamada antes de self.calculate_tfr_combinations().
     """
 
-    def __init__(self, audio_file_path, t_inicio=None, t_fim=None, resolutions=[512, 1024, 2048], count_time=False):
+    def __init__(self, audio_file_path, t_inicio=None, t_fim=None, resolutions=[1024, 2048, 4096], count_time=False):
         """
         Instancia um objeto AudioAnalysis a partir de informações sobre o áudio e sobre as representações tempo-frequenciais (RTF).
 
@@ -48,9 +48,9 @@ class AudioAnalysis():
         self.combined_tfr = None
         self.method = None
 
-        #self.__set_stft_params()
-        self.hop_length = 256
-        self.n_fft = 2048
+        self.__set_stft_params()
+        #self.hop_length = 512
+        #self.n_fft = 4096
         if self.count_time:
             time_i = default_timer()
         self.__calculate_tfrs()

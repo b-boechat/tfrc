@@ -21,7 +21,7 @@ def matlab_wrapper(path, func_name, *args):
 
 
 
-def local_sparsity_matlab_wrapper(X, freq_width_sparsity=17, freq_width_energy=41, time_width=13, zeta=10):
+def local_sparsity_matlab_wrapper(X, freq_width_sparsity=17, freq_width_energy=41, time_width=13, zeta=80):
     return matlab_wrapper("TFR_Methods/SLS", "spectrogram_comb_local_sparsity", 
             matlab.double(np.transpose(X, (1, 2, 0)).tolist()), #specs_matrix
             matlab.double([freq_width_sparsity, time_width]), # size_W_S

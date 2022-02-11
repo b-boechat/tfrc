@@ -124,6 +124,9 @@ backup/*
 dev/_hidden_dev
 Anaconda*
 
+reconstructed/*
+!reconstructed/.gitkeep
+
 # Cython generated files
 *.c
 *.html

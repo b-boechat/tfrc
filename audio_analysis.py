@@ -13,9 +13,12 @@ class AudioAnalysis():
             tfrs_tensor (ndarray): Array 3D contendo o tensor de RTFs computados para o áudio. Tem dimensões de Representações x Frequência x Tempo 
             combined_tfr (ndarray): Caso self.calculate_tfr_combination() tenha sido chamada, contém o Array 2D com a RTF combinada para o áudio, nas dimensões Frequência x Tempo. Caso contrário, contém None.
             method (String): Caso self.calculate_tfr_combination() tenha sido chamada, contém a String que representa o método usado na combinação, de acordo com o dicionário combination_methods. Caso contrário, contém None.
+            hop_size (Number): 
+            n_fft (Number):
             audio (AudioAnalysis.Audio): Objeto contendo as informações pertinentes ao sinal de áudio no tempo.
                 audio.data (ndarray): Vetor numérico 1D representando o áudio em forma .wav
-                audio.energy (double): Energia do áudio, calculada como np.linalg.norm(self.audio_data)
+                audio.sample_rate (Number): 
+                audio.energy (Number): Energia do áudio, calculada como np.linalg.norm(self.audio_data)
                 audio.file_path (String): Caminho do áudio analisado, conforme fornecido na inicialização do objeto.
                 audio.t_inicio (Number): Tempo inicial analisado do áudio. Se "None", equivale ao início do áudio.
                 audio.t_fim (Number): Tempo final analisado do áudio. Se "None", equivale ao fim do áudio.
@@ -43,6 +46,7 @@ class AudioAnalysis():
         """
         self.audio = Audio(audio_file_path, t_inicio, t_fim)
         self.resolutions = resolutions
+        self.resolutions.sort()
         self.count_time = count_time
         self.tfrs_tensor = None
         self.combined_tfr = None
@@ -50,7 +54,7 @@ class AudioAnalysis():
 
         self.__set_stft_params()
         #self.hop_length = 512
-        #self.n_fft = 4096
+        self.n_fft = self.resolutions[-1] # Para a síntese não queremos n_fft > resolutions.
         if self.count_time:
             time_i = default_timer()
         self.__calculate_tfrs()
@@ -89,17 +93,19 @@ class AudioAnalysis():
         #print(f"Soma = {np.sum(self.combined_tfr, axis=None)}")
         #print(f"Fator = {self.audio.energy/np.sum(self.combined_tfr, axis=None)}")
 
-        self.combined_tfr *= self.audio.energy/np.sum(self.combined_tfr, axis=None)
+        #self.combined_tfr *= self.audio.energy/np.sum(self.combined_tfr, axis=None)
         self.method = combination_methods[method]["name"]
 
-    def save_to_file(self, file_path):
+    def save_to_file(self, file_path, confirmation=True):
         """
         Salva o objeto atual AudioAnalysis no arquivo especificado.
-        :param file_path: Caminho do arquivo no qual o objeto será salvo.
+        :param file_path (String): Caminho do arquivo no qual o objeto será salvo.
+        :param confirmation (Boolean): Se verdadeiro, exibe uma mensagem de confirmação após escrever o arquivo.
         :return: None.
         """
         with open(file_path, "wb") as output_file:
             pickle.dump(self, output_file)
+            print(f"Output written in {file_path}")
 
 
     # Private methods.
@@ -113,6 +119,7 @@ class AudioAnalysis():
         :return: None.
         """
         # TODO Usar interpolação ou permitir maior flexibilidade na escolha dos parâmetros. Outros tipos de transformadas também.
+
         max_resolution = max(self.resolutions)
         min_resolution = min(self.resolutions)
         iter = 1
@@ -130,11 +137,12 @@ class AudioAnalysis():
         
     def __calculate_tfrs(self):
 
-        self.tfrs_tensor = np.array([librosa.stft(self.audio.audio_data, n_fft=self.n_fft,
-                                                    hop_length=self.hop_length, win_length=resolution
+        self.tfrs_tensor = np.array([librosa.stft(self.audio.data, n_fft=self.n_fft,
+                                                    hop_length=self.hop_length, win_length=resolution,
+                                                    window='hamming', center=False
                                                     ) for resolution in self.resolutions])
 
-        self.tfrs_tensor *= self.audio.energy / np.linalg.norm(self.tfrs_tensor, axis=(1, 2), keepdims=True)
+        #self.tfrs_tensor *= self.audio.energy / np.linalg.norm(self.tfrs_tensor, axis=(1, 2), keepdims=True)
 
         self.tfrs_tensor = np.square(np.abs(self.tfrs_tensor)).astype(np.double)
 
@@ -206,19 +214,19 @@ class Audio:
         self.file_path = audio_file_path
         self.t_inicio = t_inicio
         self.t_fim = t_fim
-        self.audio_data, self.sample_rate = self.__load_audio(audio_file_path, t_inicio, t_fim)
-        self.energy = np.linalg.norm(self.audio_data)
+        self.data, self.sample_rate = self.__load_audio(audio_file_path, t_inicio, t_fim)
+        self.energy = np.linalg.norm(self.data)
 
     def __load_audio(self, audio_file_path, t_inicio, t_fim):
         if t_inicio and t_fim:
             assert t_fim > t_inicio  #TODO transformar isso em um erro, provavelmente já no init.
-            return librosa.load(audio_file_path, sr=None, offset=t_inicio, duration=t_fim-t_inicio)
+            return librosa.load(audio_file_path, sr=48000, offset=t_inicio, duration=t_fim-t_inicio)
 
         if t_inicio and not t_fim:
-            return librosa.load(audio_file_path, sr=None, offset=t_inicio)
+            return librosa.load(audio_file_path, sr=48000, offset=t_inicio)
 
         if not t_inicio and t_fim:
-            return librosa.load(audio_file_path, sr=None, duration=t_fim)
+            return librosa.load(audio_file_path, sr=48000, duration=t_fim)
 
-        return librosa.load(audio_file_path, sr=None)
+        return librosa.load(audio_file_path, sr=48000)
 

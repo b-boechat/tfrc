@@ -4,15 +4,18 @@
 #def func_not_installed(X, **kwargs): # TODO Criar uma exception para FunctionNotInstalled posteriormente.
 #    raise Exception
 
-import subprocess
 from binwise_combination import median_combination, mean_combination
 from feulo_integration import feulo_spectrogram_local_sparsity_wrapper
-from matlab_integration import fast_local_sparsity_matlab_wrapper, local_sparsity_matlab_wrapper, fast_local_sparsity_matlab_wrapper
+from matlab_integration import fast_local_sparsity_matlab_wrapper, \
+                            local_sparsity_matlab_wrapper, \
+                            fast_local_sparsity_matlab_wrapper, \
+                            lukin_todd_matlab_wrapper, \
+                            sample_weighted_geometric_mean_matlab_wrapper
 
 
-
-
+#import subprocess
 #subprocess.call("python setup.py build_ext --inplace")  # TODO solução temporária até encontrar uma forma melhor de instalar o módulo em Cython por script.
+
 from lsm_par import local_sparsity_parallel_wrapper
 from lsm import local_sparsity_wrapper
 
@@ -52,5 +55,13 @@ combination_methods = {
     "fls_matlab": {
         "name" : "Fast Local Sparsity (Maurício)",
         "function" : fast_local_sparsity_matlab_wrapper
+    },
+    "lt_matlab": {
+        "name" : "Lukin Todd (Maurício)",
+        "function" : lukin_todd_matlab_wrapper 
+    },
+    "swgm_matlab": {
+        "name" : "Sample Weighted Geometric Mean (Maurício)",
+        "function" : sample_weighted_geometric_mean_matlab_wrapper
     }
 }

@@ -141,6 +141,26 @@ reconstructed/*
 
 noname/*
 !noname/sls.py
+!noname/__init__.py
+
+
+# Implementações em Matlab do Maurício.
 
 TFR_Methods/*
+!TFR_Methods/.gitkeep
+
+!TFR_Methods/SLS
+TFR_Methods/SLS/*
 !TFR_Methods/SLS/spectrogram_comb_local_sparsity.m
+
+!TFR_Methods/FHLS
+TFR_Methods/FHLS/*
+!TFR_Methods/FHLS/spectrogram_comb_FastHoyerLocalSparsity.m
+
+!TFR_Methods/LT
+TFR_Methods/LT/*
+!TFR_Methods/LT/spectrogram_comb_Lukin_Todd.m
+
+!TFR_Methods/SWGM
+TFR_Methods/SWGM/*
+!TFR_Methods/SWGM/SWGM_comb.m

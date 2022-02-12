@@ -142,7 +142,7 @@ class AudioAnalysis():
                                                     window='hamming', center=False
                                                     ) for resolution in self.resolutions])
 
-        #self.tfrs_tensor *= self.audio.energy / np.linalg.norm(self.tfrs_tensor, axis=(1, 2), keepdims=True)
+        self.tfrs_tensor *= self.audio.energy / np.linalg.norm(self.tfrs_tensor, axis=(1, 2), keepdims=True)
 
         self.tfrs_tensor = np.square(np.abs(self.tfrs_tensor)).astype(np.double)
 

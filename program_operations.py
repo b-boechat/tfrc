@@ -23,7 +23,7 @@ def generate_tfrc(audio_file_path, t_inicio, t_fim, resolutions,
 
     #print_arr(audio_analysis.combined_tfr[25:40, 20:40])
 
-    audio_analysis.plot()
+    #audio_analysis.plot()
     #audio_analysis.plot2()
 
 

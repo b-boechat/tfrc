@@ -30,9 +30,22 @@ def local_sparsity_matlab_wrapper(X, freq_width_sparsity=17, freq_width_energy=4
             float(1)) #eta
             
 
-def fast_local_sparsity_matlab_wrapper(X, freq_width=12, time_width=6, eta=20):
+def fast_local_sparsity_matlab_wrapper(X, freq_width=13, time_width=7, eta=20):
     return matlab_wrapper("TFR_Methods/FHLS", "spectrogram_comb_FastHoyerLocalSparsity",
         matlab.double(np.transpose(X, (1, 2, 0)).tolist()),
-        matlab.double(np.double(freq_width, time_width)),
+        matlab.double([freq_width, time_width]),
         float(eta)
     )
+
+def lukin_todd_matlab_wrapper(X, freq_width=17, time_width=13, eta=8):
+    return matlab_wrapper("TFR_Methods/LT", "spectrogram_comb_Lukin_Todd", 
+            matlab.double(np.transpose(X, (1, 2, 0)).tolist()), #specs_matrix
+            matlab.double([freq_width, time_width]), # size_W_S
+            float(eta), #eta 
+    )
+
+def sample_weighted_geometric_mean_matlab_wrapper(X, beta=0.5):
+    return matlab_wrapper("TFR_Methods/SWGM", "SWGM_comb", 
+            matlab.double(np.transpose(X, (1, 2, 0)).tolist()), #specs_matrix
+            float(beta) #beta
+    ) 

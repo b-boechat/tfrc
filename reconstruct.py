@@ -21,8 +21,8 @@ def reconstruct_RTISI_LA(input_file, output_file):
     print(f"{sr=}, {fft_size=}, {w_size=}, {hop_size=}, {LA=}, {threshold=}")
     print(f"Y_mag.shape = {Y_mag.shape}")
 
-    print("Y_mag")
-    print(Y_mag)
+    #print("Y_mag")
+    #print(Y_mag)
 
     RTISI_LA(Y_mag, sr, fft_size, w_size, hop_size, f"reconstructed/RTISI_LA_{output_file}.wav", LA, threshold)
 
@@ -47,12 +47,34 @@ def from_audio_file(file_name):
 
     y_orig, _ = librosa.load(input_audio_path, sr=sr)
     print(y_orig)
-    Y_mag = np.abs(librosa.stft(y_orig, n_fft=n_fft, hop_length=hop_length, win_length=n_fft, window='hamming', center=False))
+    Y_mag = np.abs(librosa.stft(y_orig, n_fft=n_fft, hop_length=hop_length, win_length=2048, window='hamming', center=False))
 
-    RTISI_LA(Y_mag, sr, 4096, 4096, 512, f"reconstructed/RTISI_LA_{file_name}_stft{n_fft}.wav")
+    RTISI_LA(Y_mag, sr, n_fft, n_fft, hop_length, f"reconstructed/RTISI_LA_{file_name}_stft{2048}_reconstructed_with_4096.wav")
 
+def generate_command(file_names):
+    methods = [("mean", "mean"),
+            ("median", "median"),
+            ("lsm", "sls"),
+            ("lsm -p zeta=-1", "nsls"),
+            ("fls_matlab", "fls"),
+            ("lt_matlab", "lt"),]
 
+    commands = []
+
+    for name in file_names:
+        for m in methods:
+            commands.append(f"python tfrc.py g {name}.wav -t -o {name}_{m[1]} -m {m[0]}")
+            commands.append(f"python reconstruct.py {name}_{m[1]}")
+
+    command = " & ".join(commands)
+
+    print(command)
 
 if __name__ == '__main__':
     main()
-    #from_audio_file("maja")
+    #from_audio_file("x1")
+    #generate_command(["goat"])
+
+
+
+

@@ -160,6 +160,7 @@ TFR_Methods/FHLS/*
 !TFR_Methods/LT
 TFR_Methods/LT/*
 !TFR_Methods/LT/spectrogram_comb_Lukin_Todd.m
+!TFR_Methods/LT/compute_smearing.m
 
 !TFR_Methods/SWGM
 TFR_Methods/SWGM/*

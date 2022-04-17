@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import pickle
 from definitions import combination_methods
 from timeit import default_timer
+from pydub import AudioSegment
 
 class AudioAnalysis():
     """ Classe que instancia uma análise de sinal de áudio por combinações de representações tempo-frequenciais, armazenando as informações pertinentes.
@@ -19,6 +20,7 @@ class AudioAnalysis():
                 audio.data (ndarray): Vetor numérico 1D representando o áudio em forma .wav
                 audio.sample_rate (Number): 
                 audio.energy (Number): Energia do áudio, calculada como np.linalg.norm(self.audio_data)
+                audio.dbfs (Number): DBFS calculada pelo pydub (temporário)
                 audio.file_path (String): Caminho do áudio analisado, conforme fornecido na inicialização do objeto.
                 audio.t_inicio (Number): Tempo inicial analisado do áudio. Se "None", equivale ao início do áudio.
                 audio.t_fim (Number): Tempo final analisado do áudio. Se "None", equivale ao fim do áudio.
@@ -93,7 +95,7 @@ class AudioAnalysis():
         #print(f"Soma = {np.sum(self.combined_tfr, axis=None)}")
         #print(f"Fator = {self.audio.energy/np.sum(self.combined_tfr, axis=None)}")
 
-        #self.combined_tfr *= self.audio.energy/np.sum(self.combined_tfr, axis=None)
+        self.combined_tfr *= self.audio.energy/np.sum(self.combined_tfr, axis=None)
         self.method = combination_methods[method]["name"]
 
     def save_to_file(self, file_path, confirmation=True):
@@ -189,14 +191,14 @@ class AudioAnalysis():
                                            hop_length=self.hop_length, sr=self.audio.sample_rate,
                                            ax=handlers[i][1])
             handlers[i][1].set_title(
-                "Spectrogram for {} with window length of {}".format(self.audio.audio_file_path, self.resolutions[i]))
+                "STFT com janela de {} pontos".format(self.resolutions[i]))
             handlers[i][0].colorbar(img, ax=handlers[i][1], format="%+2.0f dB")
         fig2, ax2 = plt.subplots()
         img = librosa.display.specshow(librosa.amplitude_to_db(self.combined_tfr, ref=np.max),
                                        y_axis='log', x_axis='time',
                                        hop_length=self.hop_length, sr=self.audio.sample_rate,
                                        ax=ax2)
-        ax2.set_title("Combination of spectrograms using {}".format(self.method))
+        ax2.set_title("Combinação das STFTs usando o {}".format(self.method))
         fig2.colorbar(img, ax=ax2, format="%+2.0f dB")
 
         plt.show()
@@ -216,6 +218,10 @@ class Audio:
         self.t_fim = t_fim
         self.data, self.sample_rate = self.__load_audio(audio_file_path, t_inicio, t_fim)
         self.energy = np.linalg.norm(self.data)
+
+        # TODO Temporário, usar a energy pra isso depois.
+        sound = AudioSegment.from_file(audio_file_path, "wav")
+        self.dbfs = sound.dBFS
 
     def __load_audio(self, audio_file_path, t_inicio, t_fim):
         if t_inicio and t_fim:

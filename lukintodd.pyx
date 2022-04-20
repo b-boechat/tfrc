@@ -1,7 +1,7 @@
 import numpy as np
 import colorama
-from libc.math cimport INFINITY
-DEF DEBUGPRINT = 1
+from libc.math cimport INFINITY, sqrt, pow
+DEF DEBUGPRINT = 0
 
 IF DEBUGPRINT:
     def print_arr(arr, color_range = None, color = None):
@@ -17,11 +17,11 @@ IF DEBUGPRINT:
 
             print("\n")
 
-def lukin_todd_wrapper(X, freq_width=25, time_width=13):
-    return lukin_todd(X, freq_width, time_width)
+def lukin_todd_wrapper(X, freq_width=25, time_width=13, eta=8.0):
+    return lukin_todd(X, freq_width, time_width, eta)
 
 
-cdef lukin_todd(double[:,:,:] X_orig, Py_ssize_t freq_width, Py_ssize_t time_width):
+cdef lukin_todd(double[:,:,:] X_orig, Py_ssize_t freq_width, Py_ssize_t time_width, double eta):
 
     cdef:
         Py_ssize_t P = X_orig.shape[0] # Eixo dos espectrogramas
@@ -88,6 +88,11 @@ cdef lukin_todd(double[:,:,:] X_orig, Py_ssize_t freq_width, Py_ssize_t time_wid
     smearing_ndarray = np.zeros((P, K, M), dtype=np.double)
     cdef double[:,:,:] smearing = smearing_ndarray
     cdef double smearing_numerator, smearing_denominator
+
+    # Variáveis referentes à combinação dos espectrogramas.
+    cdef double weight, weights_sum, result_acc
+
+    ############ Cálculo da função de smearing {{{
 
     # Itera pelos espectrogramas.
     for p in range(P):
@@ -182,12 +187,12 @@ cdef lukin_todd(double[:,:,:] X_orig, Py_ssize_t freq_width, Py_ssize_t time_wid
 
             ### Cálculo da função de smearing do Lukin-Todd {
 
-            smearing_denominator = epsilon
+            smearing_denominator = 0.0
             smearing_numerator = 0.0
             for o in range(combined_size):
                 smearing_denominator = smearing_denominator + combined[o]
-                smearing_numerator = smearing_numerator + o*combined[o]
-            smearing[p, 0, m - time_width_lobe] = smearing_numerator/smearing_denominator
+                smearing_numerator = smearing_numerator + (combined_size - o)*combined[o]
+            smearing[p, 0, m - time_width_lobe] = smearing_numerator/(sqrt(smearing_denominator) + epsilon)
 
             ### }
 
@@ -243,12 +248,12 @@ cdef lukin_todd(double[:,:,:] X_orig, Py_ssize_t freq_width, Py_ssize_t time_wid
                     print(f"Combined: {list(combined)}", end="\n\n")
 
                 ### Função de smearing {
-                smearing_denominator = epsilon
+                smearing_denominator = 0.0
                 smearing_numerator = 0.0
                 for o in range(combined_size):
                     smearing_denominator = smearing_denominator + combined[o]
-                    smearing_numerator = smearing_numerator + o*combined[o]
-                smearing[p, k - freq_width_lobe, m - time_width_lobe] = smearing_numerator/smearing_denominator
+                    smearing_numerator = smearing_numerator + (combined_size-o)*combined[o]
+                smearing[p, k - freq_width_lobe, m - time_width_lobe] = smearing_numerator/(sqrt(smearing_denominator) + epsilon)
                 
                 ### }
 
@@ -265,6 +270,28 @@ cdef lukin_todd(double[:,:,:] X_orig, Py_ssize_t freq_width, Py_ssize_t time_wid
             IF DEBUGPRINT:
                 print(f"p={p}, m={m}\nDesordenou.") #DEBUGPRINT
                 print_arr(X[p], [0, K + 2*freq_width_lobe, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.MAGENTA) #DEBUGPRINT
+    
+    ############ }}}
+
+    ############ Combinação dos espectrogramas {{{
+
+    # TODO tratar o caso não smoothed.
+
+    for k in range(K):
+        for m in range(M):
+            weights_sum = 0.0
+            result_acc = 0.0
+            for p in range(P):
+                weight = 1./(pow(smearing[p, k, m], eta) + epsilon)
+                result_acc = result_acc + weight * X[p, k + freq_width_lobe, m + time_width_lobe]
+                weights_sum = weights_sum + weight
+            result[k, m] = result_acc / weights_sum
+
+    ############ }}}
+
+    return result_ndarray
+
+
 
 
 

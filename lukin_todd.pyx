@@ -1,22 +1,11 @@
 import numpy as np
-import colorama
 cimport cython
 from libc.math cimport INFINITY, sqrt, pow
 DEF DEBUGPRINT = 0
 
-#IF DEBUGPRINT:
-def print_arr(arr, color_range = None, color = None):
-        colorama.init(autoreset=True)
-        I, J = arr.shape
-        for i in range(I):
-            for j in range(J):
-                if color_range is not None and i >= color_range[0] and i < color_range[1] and j >= color_range[2] and j < color_range[3]:
-                    print("{}".format(color + str(round(arr[i][j], 5))), end="  ")
-                else:
-                    print("{}".format(str(round(arr[i][j], 5))), end="  ")
-            print()
-
-        print("\n")
+IF DEBUGPRINT:
+    import colorama
+    from debug import print_arr
 
 def lukin_todd_wrapper(X, freq_width=17, time_width=13, eta=8.0):
     return lukin_todd(X, freq_width, time_width, eta)

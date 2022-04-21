@@ -1,14 +1,7 @@
 from audio_analysis import AudioAnalysis
+from debug import print_arr
 
 import numpy as np
-
-def print_arr(arr): # Just for debugging
-        M, N = arr.shape
-        for m in range(M):
-            for n in range(N):
-                print("{:.5f}".format(arr[m][n]), end="  ")
-            print()
-        print()
 
 def generate_tfrc(audio_file_path, t_inicio, t_fim, resolutions,
                   output_file_path,
@@ -21,7 +14,7 @@ def generate_tfrc(audio_file_path, t_inicio, t_fim, resolutions,
     audio_analysis.calculate_tfr_combination(combination_method, **combination_params)
     audio_analysis.save_to_file(output_file_path)
 
-    #print_arr(audio_analysis.combined_tfr[50:65, 50:65])
+    print_arr(audio_analysis.combined_tfr[50:65, 50:65])
 
     #audio_analysis.plot()
     #audio_analysis.plot2()

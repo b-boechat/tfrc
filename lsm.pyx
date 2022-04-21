@@ -1,5 +1,4 @@
 import numpy as np
-import colorama # Para os prints de debug.
 DEF DEBUGTIMER = 0
 DEF DEBUGPRINT = 0
 
@@ -12,19 +11,8 @@ from libc.math cimport INFINITY, pow
 # DEBUGGING
 
 IF DEBUGPRINT:
-    def print_arr(arr, color_range = None, color = None):
-            colorama.init(autoreset=True)
-            I, J = arr.shape
-            for i in range(I):
-                for j in range(J):
-                    if color_range is not None and i >= color_range[0] and i < color_range[1] and j >= color_range[2] and j < color_range[3]:
-                        print("{}".format(color + str(round(arr[i][j], 3))), end="  ")
-                    else:
-                        print("{}".format(str(round(arr[i][j], 2))), end="  ")
-                print()
-
-            print("\n")
-
+    import colorama
+    from debug import print_arr
 
 def local_sparsity_wrapper(X, freq_width_energy=41, freq_width_sparsity=17, time_width=13, zeta = 80):
     #print(f"freq_width_sparsity = {freq_width_sparsity}\nfreq_width_energy = {freq_width_energy}\ntime_width = {time_width}\nzeta = {zeta}")

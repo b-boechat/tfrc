@@ -5,7 +5,8 @@
 #    raise Exception
 
 from binwise_combination import median_combination, mean_combination
-from feulo_integration import feulo_spectrogram_local_sparsity_wrapper
+from feulo_integration import feulo_spectrogram_local_sparsity_wrapper, \
+                            feulo_lukin_todd_wrapper
 from matlab_integration import fast_local_sparsity_matlab_wrapper, \
                             local_sparsity_matlab_wrapper, \
                             fast_local_sparsity_matlab_wrapper, \
@@ -18,7 +19,7 @@ from matlab_integration import fast_local_sparsity_matlab_wrapper, \
 
 from lsm_par import local_sparsity_parallel_wrapper
 from lsm import local_sparsity_wrapper
-
+from lukin_todd import lukin_todd_wrapper
 
 
 
@@ -55,6 +56,14 @@ combination_methods = {
     "fls_matlab": {
         "name" : "Fast Local Sparsity (Maurício)",
         "function" : fast_local_sparsity_matlab_wrapper
+    },
+    "lt": {
+        "name" : "Lukin Todd",
+        "function" : lukin_todd_wrapper 
+    },
+    "lt_feulo": {
+        "name" : "Lukin Todd (Feulo)",
+        "function" : feulo_lukin_todd_wrapper 
     },
     "lt_matlab": {
         "name" : "Lukin Todd (Maurício)",

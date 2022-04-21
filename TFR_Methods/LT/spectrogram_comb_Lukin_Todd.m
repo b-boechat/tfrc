@@ -10,7 +10,7 @@ function final_TFR = spectrogram_comb_Lukin_Todd(spectrograms_tensor, size_w_S, 
 % - Poder combinar maior numero de representacoes sem perdas 
 % - A amplitude dos picos segue a representacao com maior amplitude (maior esparsidade)
 
-epsilon = 10e-10; % To avoid division by 0
+epsilon = 1e-10; % To avoid division by 0
 size_w_S = ceil(size_w_S);
 
 energy_save = 0; % This is used to save processing when there is no energy in a given frame

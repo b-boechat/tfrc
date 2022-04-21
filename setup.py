@@ -10,12 +10,16 @@ ext_modules = [
     ),
     Extension(
         "lsm",
-        ["lsm.pyx"],
+        ["lsm.pyx"]
+    ),
+    Extension(
+        "lukin_todd",
+        ["lukin_todd.pyx"]
     )
 ]
 
 setup(
-    name='lsm',
+    name='cython_implementations',
     ext_modules=cythonize(ext_modules, compiler_directives={'language_level': '3'}, annotate=True),
     zip_safe=False
 )

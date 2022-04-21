@@ -3,12 +3,6 @@ from Cython.Build import cythonize
 
 ext_modules = [
     Extension(
-        "lsm_par",
-        ["lsm_par.pyx"],
-        extra_compile_args=['/openmp']
-        #extra_link_args=['-fopenmp'],
-    ),
-    Extension(
         "lsm",
         ["lsm.pyx"]
     ),

@@ -17,7 +17,6 @@ from matlab_integration import fast_local_sparsity_matlab_wrapper, \
 #import subprocess
 #subprocess.call("python setup.py build_ext --inplace")  # TODO solução temporária até encontrar uma forma melhor de instalar o módulo em Cython por script.
 
-from lsm_par import local_sparsity_parallel_wrapper
 from lsm import local_sparsity_wrapper
 from lukin_todd import lukin_todd_wrapper
 
@@ -40,10 +39,6 @@ combination_methods = {
     "lsm": {
         "name" : "Local Sparsity Method",
         "function" : local_sparsity_wrapper
-    },
-    "lsm_par": {
-        "name" : "Local Sparsity Method (parallel)",
-        "function" : local_sparsity_parallel_wrapper
     },
     "lsm_feulo": {
         "name" : "Local Sparsity (Feulo)",

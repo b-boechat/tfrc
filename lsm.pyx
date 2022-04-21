@@ -7,7 +7,6 @@ DEF DEBUGPRINT = 0
 from timeit import default_timer # DEBUG APENAS
 
 cimport cython
-from cython.parallel import prange
 from libc.math cimport INFINITY, pow 
 
 # DEBUGGING
@@ -37,7 +36,7 @@ def local_sparsity_wrapper(X, freq_width_energy=41, freq_width_sparsity=17, time
 @cython.wraparound(False) 
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef local_sparsity(double[:,:,:] X_orig, Py_ssize_t freq_width_energy, Py_ssize_t freq_width_sparsity, Py_ssize_t time_width, double zeta):
+cdef local_sparsity(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy, Py_ssize_t freq_width_sparsity, Py_ssize_t time_width, double zeta):
     
     IF DEBUGTIMER:
         time_init = default_timer()

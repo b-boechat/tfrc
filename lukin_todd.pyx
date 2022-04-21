@@ -1,5 +1,6 @@
 import numpy as np
 import colorama
+cimport cython
 from libc.math cimport INFINITY, sqrt, pow
 DEF DEBUGPRINT = 0
 
@@ -21,7 +22,11 @@ def lukin_todd_wrapper(X, freq_width=17, time_width=13, eta=8.0):
     return lukin_todd(X, freq_width, time_width, eta)
 
 
-cdef lukin_todd(double[:,:,:] X_orig, Py_ssize_t freq_width, Py_ssize_t time_width, double eta):
+@cython.boundscheck(False)
+@cython.wraparound(False) 
+@cython.nonecheck(False)
+@cython.cdivision(True)
+cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_width, double eta):
 
     cdef:
         Py_ssize_t P = X_orig.shape[0] # Eixo dos espectrogramas

@@ -429,7 +429,7 @@ cdef local_sparsity(double[:,:,:] X_orig, Py_ssize_t freq_width_energy, Py_ssize
         print("Combinação final.")
         print_arr(result)
 
-    if DEBUGTIMER:
+    IF DEBUGTIMER:
         time_f = default_timer()
         timer_combination = time_f - time_i
         timer_total = time_f - time_init

@@ -20,7 +20,6 @@ class AudioAnalysis():
                 audio.data (ndarray): Vetor numérico 1D representando o áudio em forma .wav
                 audio.sample_rate (Number): 
                 audio.energy (Number): Energia do áudio, calculada como np.linalg.norm(self.audio_data)
-                audio.dbfs (Number): DBFS calculada pelo pydub (temporário)
                 audio.file_path (String): Caminho do áudio analisado, conforme fornecido na inicialização do objeto.
                 audio.t_inicio (Number): Tempo inicial analisado do áudio. Se "None", equivale ao início do áudio.
                 audio.t_fim (Number): Tempo final analisado do áudio. Se "None", equivale ao fim do áudio.
@@ -218,10 +217,6 @@ class Audio:
         self.t_fim = t_fim
         self.data, self.sample_rate = self.__load_audio(audio_file_path, t_inicio, t_fim)
         self.energy = np.linalg.norm(self.data)
-
-        # TODO Temporário, usar a energy pra isso depois.
-        sound = AudioSegment.from_file(audio_file_path, "wav")
-        self.dbfs = sound.dBFS
 
     def __load_audio(self, audio_file_path, t_inicio, t_fim):
         if t_inicio and t_fim:

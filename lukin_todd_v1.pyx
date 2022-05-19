@@ -14,10 +14,10 @@ def lukin_todd_wrapper(X, freq_width=11, time_width=11, eta=8.0):
     return lukin_todd(X, freq_width, time_width, eta)
 
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False) 
-#@cython.nonecheck(False)
-#@cython.cdivision(True)
+@cython.boundscheck(False)
+@cython.wraparound(False) 
+@cython.nonecheck(False)
+@cython.cdivision(True)
 cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_width, double eta):
 
     cdef:
@@ -36,13 +36,12 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
     X_ndarray = np.pad(X_orig, ((0, 0), (freq_width_lobe, freq_width_lobe), (time_width_lobe, time_width_lobe)))
     cdef double[:, :, :] X = X_ndarray
 
-
-    sort_region_ndarray = np.zeros((K, time_width), dtype = np.double)
-    cdef double[:, :] sort_region = sort_region_ndarray 
-
     
     result_ndarray = np.zeros((K, M), dtype=np.double)
     cdef double[:, :] result = result_ndarray
+
+    sort_indices_ndarray = np.empty((K, time_width), dtype=np.intp)
+    cdef Py_ssize_t[:,:] sort_indices = sort_indices_ndarray 
 
     # Variáveis referentes ao merge inicial.
     cdef:
@@ -51,11 +50,6 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
         Py_ssize_t combined_size = freq_width*time_width
         Py_ssize_t j_parent, j_left_child, j_right_child, j_smaller_child, o
         Py_ssize_t element_origin, origin_index
-
-    # Variáveis referentes ao merge com exclusão no eixo horizontal.
-    cdef:
-        double inclusion_scalar, exclusion_scalar, merge_buffer
-
 
     # Heap que armazena o menor elemento não "consumido" de cada vetor.
     heap_elements_ndarray = np.empty(num_vectors, dtype=np.double)
@@ -82,7 +76,10 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
         Py_ssize_t combined_index, previous_comb_index
         Py_ssize_t inclusion_index, exclusion_index
         Py_ssize_t inclusion_freq_position, exclusion_freq_position
-        bint included_flag
+
+    # Vetor auxiliar utilizado para desfazer a ordenação no tempo.
+    aux_horiz_vector_ndarray = np.empty(time_width, dtype=np.double)
+    cdef double[:] aux_horiz_vector = aux_horiz_vector_ndarray
 
     # Variáveis referentes ao cálculo da função de smearing.
     smearing_ndarray = np.zeros((P, K, M), dtype=np.double)
@@ -102,70 +99,29 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
         # Itera pelos segmentos temporais.
         for m in range(time_width_lobe, M + time_width_lobe):
 
+            ##### Orderna os vetores horiontais {{
 
-            if m == time_width_lobe:
+            # Itera pelos bins de frequência
+            for k in range(freq_width_lobe, K + freq_width_lobe):
 
-                ##### Orderna os vetores horiontais do zero (só é feito uma vez) {{
+                aux_k = k - freq_width_lobe
+                # Reseta o array auxiliar "sort_indices" que guarda os índices das posições originais do vetor horizontal.
+                for i in range(time_width):
+                    sort_indices[aux_k, i] = i
+                
+                # Ordena o vetor horizontal. Os índices originais são salvos para que a multiplicação pela janela 
+                # possa ser desfeita posteriormente.
+                for i_sort in range(1, time_width):
+                    key = X[p, k, m - time_width_lobe + i_sort]
+                    j_sort = i_sort - 1
+                    while j_sort >= 0 and key < X[p, k, m - time_width_lobe + j_sort]:
+                        X[p, k, m - time_width_lobe + j_sort + 1] = X[p, k, m - time_width_lobe + j_sort]
+                        sort_indices[aux_k, j_sort + 1] = sort_indices[aux_k, j_sort]
+                        j_sort = j_sort - 1
+                    X[p, k, m - time_width_lobe + j_sort + 1] = key
+                    sort_indices[aux_k, j_sort + 1] = i_sort
 
-                # Itera pelos bins de frequência
-                for k in range(freq_width_lobe, K + freq_width_lobe):
-
-                    aux_k = k - freq_width_lobe
-                    
-                    # Ordena o vetor horizontal.
-                    for i_sort in range(1, time_width):
-                        key = X[p, k, m - time_width_lobe + i_sort]
-                        j_sort = i_sort - 1
-                        while j_sort >= 0 and key < X[p, k, m - time_width_lobe + j_sort]:
-                            X[p, k, m - time_width_lobe + j_sort + 1] = X[p, k, m - time_width_lobe + j_sort]
-                            j_sort = j_sort - 1
-                        X[p, k, m - time_width_lobe + j_sort + 1] = key
-
-                ##### }}
-
-            else:
-
-                #### Obtém os próximos vetores horizontais, adicionando o elemento em m + time_width_lobe e 
-                # excluindo o originalmente em m - time_width_lobe - 1 {{
-
-                for k in range(freq_width_lobe, K + freq_width_lobe):
-                    # Copia o valor a ser incluído e o valor a ser excluído para as variáveis correspondentes.
-                    inclusion_scalar = X[p, k, m + time_width_lobe] #
-
-                    exclusion_scalar = X_orig[p, k - freq_width_lobe, m - time_width] #
-                    
-                    # Inicializa o índice e as variáveis auxiliares.
-                    included_flag = False
-                    i_sort = time_width - 1
-                    merge_buffer = -1.0 # TODO TEMP debugging. o container do inclusion_scalar pode ser aproveitado como merge_buffer
-
-                    while X[p, k, m - time_width_lobe + i_sort] != exclusion_scalar:
-                        if included_flag:
-                            X[p, k, m - time_width_lobe + i_sort], merge_buffer = merge_buffer, X[p, k, m - time_width_lobe + i_sort]
-
-                        elif inclusion_scalar > X[p, k, m - time_width_lobe + i_sort]:
-                            X[p, k, m - time_width_lobe + i_sort], merge_buffer = inclusion_scalar, X[p, k, m - time_width_lobe + i_sort]
-                            included_flag = True
-
-                        i_sort = i_sort - 1
-                    
-                    if included_flag:
-                        X[p, k, m - time_width_lobe + i_sort] = merge_buffer
-
-                    else:
-                        while inclusion_scalar < X[p, k, m - time_width_lobe + i_sort]:
-                            X[p, k, m - time_width_lobe + i_sort] = X[p, k, m - time_width_lobe + i_sort - 1]
-                            i_sort = i_sort - 1
-
-                        X[p, k, m - time_width_lobe + i_sort] = inclusion_scalar 
-
-
-
-                            
-
-                ##### }}
-
-
+            ##### }}
 
             IF DEBUGPRINT:
                 print(f"p={p}, m={m}\nOrdenou.") #DEBUGPRINT
@@ -296,6 +252,16 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
                     print("Combined vector:", list(combined))
                     print_arr(smearing[p], [k - freq_width_lobe, k - freq_width_lobe + 1, m - time_width_lobe, m - time_width_lobe + 1], colorama.Back.RED)
 
+            ### Desordenar no tempo. {  # TODO dá pra fazer isso sem um vetor auxiliar
+            for k in range(freq_width_lobe, K + freq_width_lobe):
+                for i in range(time_width):
+                    aux_horiz_vector[sort_indices[k - freq_width_lobe, i]] = X[p, k, m - time_width_lobe + i] 
+                for i in range(time_width):
+                    X[p, k, m - time_width_lobe + i] = aux_horiz_vector[i]
+            ### }
+            IF DEBUGPRINT:
+                print(f"p={p}, m={m}\nDesordenou.") #DEBUGPRINT
+                print_arr(X[p], [0, K + 2*freq_width_lobe, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.MAGENTA) #DEBUGPRINT
     
     ############ }}}
 

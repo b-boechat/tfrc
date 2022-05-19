@@ -19,6 +19,7 @@ from matlab_integration import fast_local_sparsity_matlab_wrapper, \
 
 from lsm import local_sparsity_wrapper
 from lukin_todd import lukin_todd_wrapper
+from lukin_todd_v1 import lukin_todd_v1_wrapper
 
 
 
@@ -55,6 +56,10 @@ combination_methods = {
     "lt": {
         "name" : "Lukin Todd",
         "function" : lukin_todd_wrapper 
+    },
+    "lt_v1": {
+        "name" : "Lukin Todd (v1)",
+        "function" : lukin_todd_v1_wrapper 
     },
     "lt_feulo": {
         "name" : "Lukin Todd (Feulo)",

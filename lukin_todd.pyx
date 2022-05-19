@@ -1,4 +1,4 @@
-# Primeira versão otimizada, usando o merge with exclusion.
+# Segunda versão otimizada, usando o merge with exclusion na horizontal também.
 
 
 import numpy as np
@@ -14,10 +14,10 @@ def lukin_todd_wrapper(X, freq_width=11, time_width=11, eta=8.0):
     return lukin_todd(X, freq_width, time_width, eta)
 
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False) 
-#@cython.nonecheck(False)
-#@cython.cdivision(True)
+@cython.boundscheck(False)
+@cython.wraparound(False) 
+@cython.nonecheck(False)
+@cython.cdivision(True)
 cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_width, double eta):
 
     cdef:
@@ -37,7 +37,7 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
     cdef double[:, :, :] X = X_ndarray
 
 
-    sort_region_ndarray = np.zeros((K, time_width), dtype = np.double)
+    sort_region_ndarray = np.zeros((K + 2*freq_width_lobe, time_width), dtype = np.double)
     cdef double[:, :] sort_region = sort_region_ndarray 
 
     
@@ -55,6 +55,8 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
     # Variáveis referentes ao merge com exclusão no eixo horizontal.
     cdef:
         double inclusion_scalar, exclusion_scalar, merge_buffer
+
+        Py_ssize_t k_exc_orig, m_exc_orig # TODO temporário enquanto o programa não é restruturado em termos do sorted_region.
 
 
     # Heap que armazena o menor elemento não "consumido" de cada vetor.
@@ -132,8 +134,26 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
                     # Copia o valor a ser incluído e o valor a ser excluído para as variáveis correspondentes.
                     inclusion_scalar = X[p, k, m + time_width_lobe] #
 
-                    exclusion_scalar = X_orig[p, k - freq_width_lobe, m - time_width] #
+                    #print(f" p = {p}, k = {k}, m = {m}; Antes:")
+                    #print_arr(X[p], color_range=[k, k+1, m - time_width_lobe, m + time_width_lobe + 1])
+
+
+                    # TODO esse bloco vai ser removido depois da reestruturação do código com o sorted_region {
+                    k_exc_orig = k - freq_width_lobe
+                    m_exc_orig = m - time_width
+                    if k_exc_orig < 0 or m_exc_orig < 0:
+                        exclusion_scalar = 0.0 # Só faz sentido com o zero-padding, se for trocado pra simétrico perde a lógica.
+                    else: 
+                        exclusion_scalar = X_orig[p, k_exc_orig, m_exc_orig] #
+
+                    for i_sort in range(time_width):
+                        X[p, k, m + time_width_lobe - i_sort] = X[p, k, m + time_width_lobe - 1 - i_sort] 
+
+                    #print(f"Depois:")
+                    #print_arr(X[p], color_range=[k, k+1, m - time_width_lobe, m + time_width_lobe + 1])
                     
+                    # }
+
                     # Inicializa o índice e as variáveis auxiliares.
                     included_flag = False
                     i_sort = time_width - 1
@@ -153,13 +173,15 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
                         X[p, k, m - time_width_lobe + i_sort] = merge_buffer
 
                     else:
-                        while inclusion_scalar < X[p, k, m - time_width_lobe + i_sort]:
-                            X[p, k, m - time_width_lobe + i_sort] = X[p, k, m - time_width_lobe + i_sort - 1]
+                        i_sort = i_sort - 1
+                        while inclusion_scalar < X[p, k, m - time_width_lobe + i_sort] and i_sort >= 0:
+                            X[p, k, m - time_width_lobe + i_sort + 1] = X[p, k, m - time_width_lobe + i_sort]
                             i_sort = i_sort - 1
 
-                        X[p, k, m - time_width_lobe + i_sort] = inclusion_scalar 
+                        X[p, k, m - time_width_lobe + i_sort + 1] = inclusion_scalar 
 
-
+                    #print(f"Depois do merge:")
+                    #print_arr(X[p], color_range=[k, k+1, m - time_width_lobe, m + time_width_lobe + 1], color=colorama.Fore.GREEN)
 
                             
 
@@ -313,7 +335,7 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
             result_acc = 0.0
             for p in range(P):
                 weight = 1./(pow(smearing[p, k, m], eta) + epsilon)
-                result_acc = result_acc + weight * X[p, k + freq_width_lobe, m + time_width_lobe]
+                result_acc = result_acc + weight * X_orig[p, k, m]
                 weights_sum = weights_sum + weight
             result[k, m] = result_acc / weights_sum
 

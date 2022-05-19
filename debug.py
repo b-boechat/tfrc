@@ -1,6 +1,6 @@
 import colorama
 
-def print_arr(arr, color_range = None, color = None, round_digs=4):
+def print_arr(arr, color_range = None, color = colorama.Fore.RED, round_digs=4):
         colorama.init(autoreset=True)
         I, J = arr.shape
         for i in range(I):

@@ -9,7 +9,7 @@ for tfrInd = 1:size(S,3)
         indVector = 1:N;
         firstMoment = sum(sortedVector.*indVector);
 
-        energyCompaction(tfrInd) = firstMoment/(sqrt(sum(sortedVector)) + 10^(-10));
+        energyCompaction(tfrInd) = firstMoment/(sqrt(sum(sortedVector)) + 1^(-10));
 end
 
 end

@@ -1,5 +1,5 @@
 import numpy as np
-DEF DEBUGTIMER = 0
+DEF DEBUGTIMER = 1
 DEF DEBUGPRINT = 0
 
 
@@ -118,7 +118,7 @@ cdef local_sparsity(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy, Py_ssi
 
     IF DEBUGTIMER:
         timer_sparsity = 0 
-
+        timer_sort_vecs = 0
 
     ################################################### Cálculo da Esparsidade Local {{ 
 
@@ -154,7 +154,7 @@ cdef local_sparsity(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy, Py_ssi
                     sort_indices[aux_k, j_sort + 1] = i_sort
 
             IF DEBUGTIMER:
-                timer_sort_vecs = default_timer() - time_i
+                timer_sort_vecs = timer_sort_vecs + default_timer() - time_i
             IF DEBUGPRINT:
                 pass
                 print("Multiplicou pelo Hamming no tempo e ordenou.") #DEBUGPRINT

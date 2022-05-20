@@ -20,6 +20,7 @@ from matlab_integration import fast_local_sparsity_matlab_wrapper, \
 from lsm import local_sparsity_wrapper
 from lukin_todd import lukin_todd_wrapper
 from lukin_todd_v1 import lukin_todd_v1_wrapper
+from swgm import swgm_wrapper
 
 
 
@@ -68,6 +69,10 @@ combination_methods = {
     "lt_matlab": {
         "name" : "Lukin Todd (Maurício)",
         "function" : lukin_todd_matlab_wrapper 
+    },
+    "swgm": {
+        "name" : "Sample Weighted Geometric Mean",
+        "function" : swgm_wrapper
     },
     "swgm_matlab": {
         "name" : "Sample Weighted Geometric Mean (Maurício)",

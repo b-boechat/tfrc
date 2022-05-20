@@ -13,6 +13,10 @@ ext_modules = [
     Extension(
         "lukin_todd_v1",
         ["lukin_todd_v1.pyx"]
+    ),
+    Extension(
+        "swgm",
+        ["swgm.pyx"]
     )
 ]
 

@@ -155,30 +155,23 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
                     # }
 
                     # Inicializa o índice e as variáveis auxiliares.
-                    included_flag = False
+                    
                     i_sort = time_width - 1
-                    merge_buffer = -1.0 # TODO TEMP debugging. o container do inclusion_scalar pode ser aproveitado como merge_buffer
+                    #included_flag = False
+                    #merge_buffer = -1.0 # TODO TEMP debugging. o container do inclusion_scalar pode ser aproveitado como merge_buffer
 
                     while X[p, k, m - time_width_lobe + i_sort] != exclusion_scalar:
-                        if included_flag:
-                            X[p, k, m - time_width_lobe + i_sort], merge_buffer = merge_buffer, X[p, k, m - time_width_lobe + i_sort]
-
-                        elif inclusion_scalar > X[p, k, m - time_width_lobe + i_sort]:
-                            X[p, k, m - time_width_lobe + i_sort], merge_buffer = inclusion_scalar, X[p, k, m - time_width_lobe + i_sort]
-                            included_flag = True
+                        if inclusion_scalar > X[p, k, m - time_width_lobe + i_sort]:
+                            X[p, k, m - time_width_lobe + i_sort], inclusion_scalar = inclusion_scalar, X[p, k, m - time_width_lobe + i_sort]
 
                         i_sort = i_sort - 1
                     
-                    if included_flag:
-                        X[p, k, m - time_width_lobe + i_sort] = merge_buffer
-
-                    else:
+                    i_sort = i_sort - 1
+                    while inclusion_scalar < X[p, k, m - time_width_lobe + i_sort] and i_sort >= 0:
+                        X[p, k, m - time_width_lobe + i_sort + 1] = X[p, k, m - time_width_lobe + i_sort]
                         i_sort = i_sort - 1
-                        while inclusion_scalar < X[p, k, m - time_width_lobe + i_sort] and i_sort >= 0:
-                            X[p, k, m - time_width_lobe + i_sort + 1] = X[p, k, m - time_width_lobe + i_sort]
-                            i_sort = i_sort - 1
 
-                        X[p, k, m - time_width_lobe + i_sort + 1] = inclusion_scalar 
+                    X[p, k, m - time_width_lobe + i_sort + 1] = inclusion_scalar 
 
                     #print(f"Depois do merge:")
                     #print_arr(X[p], color_range=[k, k+1, m - time_width_lobe, m + time_width_lobe + 1], color=colorama.Fore.GREEN)

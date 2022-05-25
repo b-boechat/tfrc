@@ -14,10 +14,10 @@ def lukin_todd_wrapper(X, freq_width=11, time_width=11, eta=8.0):
     return lukin_todd(X, freq_width, time_width, eta)
 
 
-@cython.boundscheck(False)
-@cython.wraparound(False) 
-@cython.nonecheck(False)
-@cython.cdivision(True)
+#@cython.boundscheck(False)
+#@cython.wraparound(False) 
+#@cython.nonecheck(False)
+#@cython.cdivision(True)
 cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_width, double eta):
 
     cdef:
@@ -37,8 +37,9 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
     cdef double[:, :, :] X = X_ndarray
 
 
-    sort_region_ndarray = np.zeros((K + 2*freq_width_lobe, time_width), dtype = np.double)
-    cdef double[:, :] sort_region = sort_region_ndarray 
+    # Container que armazena um segmento horizontal de um espectrograma (com todos os bins de frequência). Usado nos cálculos.
+    calc_region_ndarray = np.zeros((K + 2*freq_width_lobe, time_width), dtype = np.double)
+    cdef double[:, :] calc_region = calc_region_ndarray 
 
     
     result_ndarray = np.zeros((K, M), dtype=np.double)
@@ -100,14 +101,22 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
     for p in range(P):
         IF DEBUGPRINT:
             print(f"Padded X[{p}]")
-            print_arr(X_ndarray[p], [freq_width_lobe, K + freq_width_lobe, time_width_lobe, M + time_width_lobe], colorama.Back.CYAN)
+            print_arr(X_ndarray[p], [freq_width_lobe, K + freq_width_lobe, time_width_lobe, M + time_width_lobe], colorama.Fore.CYAN)
         # Itera pelos segmentos temporais.
+        
+        # Copia a região inicial de cálculo para o container calc_region.
+        for k in range(freq_width_lobe, K + freq_width_lobe):
+            for i in range(time_width):
+                calc_region[k, i] = X[p, k, i]
+        
+        IF DEBUGPRINT:
+            print("Initial region:")
+            print_arr(calc_region)
+        
         for m in range(time_width_lobe, M + time_width_lobe):
 
-
             if m == time_width_lobe:
-
-                ##### Orderna os vetores horiontais do zero (só é feito uma vez) {{
+                ##### Orderna os vetores horiontais do zero (só é feito uma vez por espectrograma, para os vetores do segmento mais à esquerda.) {{
 
                 # Itera pelos bins de frequência
                 for k in range(freq_width_lobe, K + freq_width_lobe):
@@ -116,14 +125,18 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
                     
                     # Ordena o vetor horizontal.
                     for i_sort in range(1, time_width):
-                        key = X[p, k, m - time_width_lobe + i_sort]
+                        key = calc_region[k, i_sort]
                         j_sort = i_sort - 1
-                        while j_sort >= 0 and key < X[p, k, m - time_width_lobe + j_sort]:
-                            X[p, k, m - time_width_lobe + j_sort + 1] = X[p, k, m - time_width_lobe + j_sort]
+                        while j_sort >= 0 and key < calc_region[k, j_sort]:
+                            calc_region[k, j_sort + 1] = calc_region[k, j_sort]
                             j_sort = j_sort - 1
-                        X[p, k, m - time_width_lobe + j_sort + 1] = key
+                        calc_region[k, j_sort + 1] = key
 
                 ##### }}
+
+                IF DEBUGPRINT:
+                    print("Initial sort:")
+                    print_arr(calc_region)
 
             else:
 
@@ -133,58 +146,28 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
                 for k in range(freq_width_lobe, K + freq_width_lobe):
                     # Copia o valor a ser incluído e o valor a ser excluído para as variáveis correspondentes.
                     inclusion_scalar = X[p, k, m + time_width_lobe] #
+                    exclusion_scalar = X[p, k, m - time_width_lobe - 1]
 
-                    #print(f" p = {p}, k = {k}, m = {m}; Antes:")
-                    #print_arr(X[p], color_range=[k, k+1, m - time_width_lobe, m + time_width_lobe + 1])
-
-
-                    # TODO esse bloco vai ser removido depois da reestruturação do código com o sorted_region {
-                    k_exc_orig = k - freq_width_lobe
-                    m_exc_orig = m - time_width
-                    if k_exc_orig < 0 or m_exc_orig < 0:
-                        exclusion_scalar = 0.0 # Só faz sentido com o zero-padding, se for trocado pra simétrico perde a lógica.
-                    else: 
-                        exclusion_scalar = X_orig[p, k_exc_orig, m_exc_orig] #
-
-                    for i_sort in range(time_width):
-                        X[p, k, m + time_width_lobe - i_sort] = X[p, k, m + time_width_lobe - 1 - i_sort] 
-
-                    #print(f"Depois:")
-                    #print_arr(X[p], color_range=[k, k+1, m - time_width_lobe, m + time_width_lobe + 1])
-                    
-                    # }
-
-                    # Inicializa o índice e as variáveis auxiliares.
-                    
+                    # Inicializa o índice.                    
                     i_sort = time_width - 1
-                    #included_flag = False
-                    #merge_buffer = -1.0 # TODO TEMP debugging. o container do inclusion_scalar pode ser aproveitado como merge_buffer
 
-                    while X[p, k, m - time_width_lobe + i_sort] != exclusion_scalar:
-                        if inclusion_scalar > X[p, k, m - time_width_lobe + i_sort]:
-                            X[p, k, m - time_width_lobe + i_sort], inclusion_scalar = inclusion_scalar, X[p, k, m - time_width_lobe + i_sort]
+                    # Realiza o algoritmo (TODO explicar)
+                    while calc_region[k, i_sort] != exclusion_scalar:
+                        if inclusion_scalar > calc_region[k, i_sort]:
+                            calc_region[k, i_sort], inclusion_scalar = inclusion_scalar, calc_region[k, i_sort]
 
                         i_sort = i_sort - 1
                     
                     i_sort = i_sort - 1
-                    while inclusion_scalar < X[p, k, m - time_width_lobe + i_sort] and i_sort >= 0:
-                        X[p, k, m - time_width_lobe + i_sort + 1] = X[p, k, m - time_width_lobe + i_sort]
+                    while inclusion_scalar < calc_region[k, i_sort] and i_sort >= 0:
+                        calc_region[k, i_sort + 1] = calc_region[k, i_sort]
                         i_sort = i_sort - 1
 
-                    X[p, k, m - time_width_lobe + i_sort + 1] = inclusion_scalar 
+                    calc_region[k, i_sort + 1] = inclusion_scalar 
 
-                    #print(f"Depois do merge:")
-                    #print_arr(X[p], color_range=[k, k+1, m - time_width_lobe, m + time_width_lobe + 1], color=colorama.Fore.GREEN)
-
-                            
 
                 ##### }}
 
-
-
-            IF DEBUGPRINT:
-                print(f"p={p}, m={m}\nOrdenou.") #DEBUGPRINT
-                print_arr(X[p], [0, K + 2*freq_width_lobe, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.MAGENTA) #DEBUGPRINT
                 
             ##### Realiza o primeiro merge. {{
             combined = combined_odd
@@ -192,7 +175,7 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
                 
             for i in range(num_vectors):
                 ### Inicializa a heap com o primeiro elemento de cada vetor {
-                heap_elements[i] = X[p, i, m - time_width_lobe]
+                heap_elements[i] = calc_region[i, 0]
                 heap_origins[i] = i
                 array_indices[i] = 0
                 ### }
@@ -216,7 +199,7 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
                 if origin_index >= len_vectors:
                     heap_elements[0] = INFINITY
                 else:
-                    heap_elements[0] = X[p, element_origin, m - time_width_lobe + origin_index]
+                    heap_elements[0] = calc_region[element_origin, origin_index]
                 ### }
 
                 ### Heapify down {           
@@ -254,9 +237,11 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
 
             IF DEBUGPRINT:
                 print("Window:")
-                print_arr(X[p], [0, freq_width, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.BLUE) #DEBUGPRINT
+                print_arr(X[p], [0, freq_width, m - time_width_lobe, m + time_width_lobe + 1], colorama.Fore.BLUE)
+                print("Calc_region:")
+                print_arr(calc_region, [0, freq_width, 0, time_width], colorama.Fore.MAGENTA)
                 print("Combined vector:", list(combined))
-                print_arr(smearing[p], [0, 1, m - time_width_lobe, m - time_width_lobe + 1], colorama.Back.RED)
+                print_arr(smearing[p], [0, 1, m - time_width_lobe, m - time_width_lobe + 1], colorama.Fore.RED)
 
             # Itera pelos slices de frequência, exceto o primeiro.
             for k in range(freq_width_lobe + 1, K + freq_width_lobe):
@@ -273,14 +258,14 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
                 for o in range(combined_size + len_vectors):
                     if previous_comb_index >= combined_size:
                         # Se os elementos de previous_combined já se esgotaram, pop num elemento de inclusion.
-                        combined[combined_index] = X[p, k + freq_width_lobe, m - time_width_lobe + inclusion_index]
+                        combined[combined_index] = calc_region[k + freq_width_lobe, inclusion_index]
                         combined_index = combined_index + 1
                         inclusion_index = inclusion_index + 1
-                    elif exclusion_index < len_vectors and previous_combined[previous_comb_index] == X[p, k - freq_width_lobe - 1, m - time_width_lobe + exclusion_index]:
+                    elif exclusion_index < len_vectors and previous_combined[previous_comb_index] == calc_region[k - freq_width_lobe - 1, exclusion_index]:
                         # Pula elemento do previous_combined que faz parte do vetor exclusion.
                         previous_comb_index = previous_comb_index + 1
                         exclusion_index = exclusion_index + 1
-                    elif inclusion_index >= len_vectors or previous_combined[previous_comb_index] <= X[p, k + freq_width_lobe, m - time_width_lobe + inclusion_index]:
+                    elif inclusion_index >= len_vectors or previous_combined[previous_comb_index] <= calc_region[k + freq_width_lobe, inclusion_index]:
                         # Se os elementos de inclusion já se esgotaram, ou se o elemento atual de previous_combined é menor que o de inclusion, 
                         # pop num elemento de previous_combined
                         combined[combined_index] = previous_combined[previous_comb_index]
@@ -288,7 +273,7 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
                         previous_comb_index = previous_comb_index + 1
                     else:
                         # Por último, se o elemento atual de inclusion é menor que o de previous_combined, pop num elemento de inclusion.
-                        combined[combined_index] = X[p, k + freq_width_lobe, m - time_width_lobe + inclusion_index]
+                        combined[combined_index] = calc_region[k + freq_width_lobe, inclusion_index]
                         combined_index = combined_index + 1
                         inclusion_index = inclusion_index + 1
 
@@ -307,9 +292,11 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
 
                 IF DEBUGPRINT:
                     print("Window:")
-                    print_arr(X[p], [k - freq_width_lobe, k + freq_width_lobe + 1, m - time_width_lobe, m + time_width_lobe + 1], colorama.Back.BLUE) #DEBUGPRINT
+                    print_arr(X[p], [k - freq_width_lobe, k + freq_width_lobe + 1, m - time_width_lobe, m + time_width_lobe + 1], colorama.Fore.BLUE)
+                    print("Calc_region:")
+                    print_arr(calc_region, [k - freq_width_lobe, k + freq_width_lobe + 1, 0, time_width], colorama.Fore.MAGENTA)
                     print("Combined vector:", list(combined))
-                    print_arr(smearing[p], [k - freq_width_lobe, k - freq_width_lobe + 1, m - time_width_lobe, m - time_width_lobe + 1], colorama.Back.RED)
+                    print_arr(smearing[p], [k - freq_width_lobe, k - freq_width_lobe + 1, m - time_width_lobe, m - time_width_lobe + 1], colorama.Fore.RED)
 
     
     ############ }}}

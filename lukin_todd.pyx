@@ -5,19 +5,24 @@ import numpy as np
 cimport cython
 from libc.math cimport INFINITY, sqrt, pow
 DEF DEBUGPRINT = 0
+DEF DEBUGTIMER = 0
 
 IF DEBUGPRINT:
     import colorama
     from debug import print_arr
 
+
+IF DEBUGTIMER:
+    from libc.time cimport clock_t, clock
+
 def lukin_todd_wrapper(X, freq_width=11, time_width=11, eta=8.0):
     return lukin_todd(X, freq_width, time_width, eta)
 
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False) 
-#@cython.nonecheck(False)
-#@cython.cdivision(True)
+@cython.boundscheck(False)
+@cython.wraparound(False) 
+@cython.nonecheck(False)
+@cython.cdivision(True)
 cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_width, double eta):
 
     cdef:
@@ -31,6 +36,11 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
         double key
 
         double epsilon = 1e-10
+
+    IF DEBUGTIMER:
+        cdef:
+            clock_t time_i, time_f 
+            double timer_initial_copy = 0, timer_initial_sort = 0, timer_new_merge = 0 
 
 
     X_ndarray = np.pad(X_orig, ((0, 0), (freq_width_lobe, freq_width_lobe), (time_width_lobe, time_width_lobe)))
@@ -104,15 +114,22 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
             print_arr(X_ndarray[p], [freq_width_lobe, K + freq_width_lobe, time_width_lobe, M + time_width_lobe], colorama.Fore.CYAN)
         # Itera pelos segmentos temporais.
         
+        IF DEBUGTIMER:
+            time_i = clock()
+
         # Copia a região inicial de cálculo para o container calc_region.
         for k in range(freq_width_lobe, K + freq_width_lobe):
             for i in range(time_width):
                 calc_region[k, i] = X[p, k, i]
-        
+
+        IF DEBUGTIMER:
+            time_f = clock()
+            timer_initial_copy = timer_initial_copy + <double> (time_f - time_i)
+
         IF DEBUGPRINT:
             print("Initial region:")
             print_arr(calc_region)
-        
+
         for m in range(time_width_lobe, M + time_width_lobe):
 
             if m == time_width_lobe:

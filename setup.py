@@ -22,6 +22,6 @@ ext_modules = [
 
 setup(
     name='cython_implementations',
-    ext_modules=cythonize(ext_modules, compiler_directives={'language_level': '3'}, annotate=False),
+    ext_modules=cythonize(ext_modules, compiler_directives={'language_level': '3'}, annotate=True),
     zip_safe=False
 )

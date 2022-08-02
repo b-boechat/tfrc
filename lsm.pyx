@@ -1,5 +1,5 @@
 import numpy as np
-DEF DEBUGTIMER = 1
+DEF DEBUGTIMER = 0
 DEF DEBUGPRINT = 0
 
 
@@ -14,7 +14,7 @@ IF DEBUGPRINT:
     import colorama
     from debug import print_arr
 
-def local_sparsity_wrapper(X, freq_width_energy=41, freq_width_sparsity=17, time_width=13, zeta = 80):
+def local_sparsity_wrapper(X, freq_width_energy=15, freq_width_sparsity=39, time_width=11, zeta = 80):
     #print(f"freq_width_sparsity = {freq_width_sparsity}\nfreq_width_energy = {freq_width_energy}\ntime_width = {time_width}\nzeta = {zeta}")
     return local_sparsity(X, freq_width_energy, freq_width_sparsity, time_width, zeta)
 

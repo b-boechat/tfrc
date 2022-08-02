@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import pickle
 from definitions import combination_methods
 from timeit import default_timer
-from pydub import AudioSegment
 
 class AudioAnalysis():
     """ Classe que instancia uma análise de sinal de áudio por combinações de representações tempo-frequenciais, armazenando as informações pertinentes.

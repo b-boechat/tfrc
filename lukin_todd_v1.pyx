@@ -10,7 +10,7 @@ IF DEBUGPRINT:
     import colorama
     from debug import print_arr
 
-def lukin_todd_v1_wrapper(X, freq_width=11, time_width=11, eta=8.0):
+def lukin_todd_v1_wrapper(X, freq_width=39, time_width=11, eta=8.0):
     return lukin_todd(X, freq_width, time_width, eta)
 
 

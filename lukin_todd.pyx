@@ -15,7 +15,7 @@ IF DEBUGPRINT:
 IF DEBUGTIMER:
     from libc.time cimport clock_t, clock
 
-def lukin_todd_wrapper(X, freq_width=11, time_width=11, eta=8.0):
+def lukin_todd_wrapper(X, freq_width=39, time_width=11, eta=8.0):
     return lukin_todd(X, freq_width, time_width, eta)
 
 

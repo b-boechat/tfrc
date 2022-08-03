@@ -18,8 +18,10 @@ from matlab_integration import fast_local_sparsity_matlab_wrapper, \
 #subprocess.call("python setup.py build_ext --inplace")  # TODO solução temporária até encontrar uma forma melhor de instalar o módulo em Cython por script.
 
 from lsm import local_sparsity_wrapper
+from lsm_baseline import local_sparsity_baseline_wrapper
 from lukin_todd import lukin_todd_wrapper
 from lukin_todd_v1 import lukin_todd_v1_wrapper
+from lukin_todd_baseline import lukin_todd_baseline_wrapper
 from swgm import swgm_wrapper
 
 
@@ -41,6 +43,10 @@ combination_methods = {
     "lsm": {
         "name" : "Local Sparsity Method",
         "function" : local_sparsity_wrapper
+    },
+    "lsm_baseline": {
+        "name" : "Local Sparsity Method (Baseline)",
+        "function" : local_sparsity_baseline_wrapper
     },
     "lsm_feulo": {
         "name" : "Local Sparsity (Feulo)",
@@ -65,6 +71,10 @@ combination_methods = {
     "lt_feulo": {
         "name" : "Lukin Todd (Feulo)",
         "function" : feulo_lukin_todd_wrapper 
+    },
+    "lt_baseline": {
+        "name" : "Lukin Todd (Baseline)",
+        "function" : lukin_todd_baseline_wrapper
     },
     "lt_matlab": {
         "name" : "Lukin Todd (Maurício)",

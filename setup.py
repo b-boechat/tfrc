@@ -7,12 +7,20 @@ ext_modules = [
         ["lsm.pyx"]
     ),
     Extension(
+        "lsm_baseline",
+        ["lsm_baseline.pyx"]
+    ),
+    Extension(
         "lukin_todd",
         ["lukin_todd.pyx"]
     ),
     Extension(
         "lukin_todd_v1",
         ["lukin_todd_v1.pyx"]
+    ),
+    Extension(
+        "lukin_todd_baseline",
+        ["lukin_todd_baseline.pyx"]
     ),
     Extension(
         "swgm",

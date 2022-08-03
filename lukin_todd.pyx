@@ -32,7 +32,7 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
         
         Py_ssize_t freq_width_lobe = (freq_width-1)//2
         Py_ssize_t time_width_lobe = (time_width-1)//2
-        Py_ssize_t p, m, k, aux_k, i_sort, j_sort, i, j
+        Py_ssize_t p, m, k, i_sort, j_sort, i, j
         double key
 
         double epsilon = 1e-10
@@ -112,13 +112,12 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
         IF DEBUGPRINT:
             print(f"Padded X[{p}]")
             print_arr(X_ndarray[p], [freq_width_lobe, K + freq_width_lobe, time_width_lobe, M + time_width_lobe], colorama.Fore.CYAN)
-        # Itera pelos segmentos temporais.
         
         IF DEBUGTIMER:
             time_i = clock()
 
         # Copia a região inicial de cálculo para o container calc_region.
-        for k in range(freq_width_lobe, K + freq_width_lobe):
+        for k in range(freq_width_lobe, K + freq_width_lobe): # Os limites não precisam incluir a região de zero-padding.
             for i in range(time_width):
                 calc_region[k, i] = X[p, k, i]
 
@@ -130,17 +129,18 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
             print("Initial region:")
             print_arr(calc_region)
 
+        # Itera pelos segmentos temporais.
         for m in range(time_width_lobe, M + time_width_lobe):
 
             if m == time_width_lobe:
                 ##### Orderna os vetores horiontais do zero (só é feito uma vez por espectrograma, para os vetores do segmento mais à esquerda.) {{
 
                 # Itera pelos bins de frequência
-                for k in range(freq_width_lobe, K + freq_width_lobe):
+                for k in range(freq_width_lobe, K + freq_width_lobe): # Novamente, não precisa iterar pela região de zero-padding.
 
-                    aux_k = k - freq_width_lobe
-                    
                     # Ordena o vetor horizontal.
+                    
+                    #calc_region_ndarray.sort()
                     for i_sort in range(1, time_width):
                         key = calc_region[k, i_sort]
                         j_sort = i_sort - 1

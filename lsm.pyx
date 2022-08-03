@@ -2,7 +2,6 @@ import numpy as np
 DEF DEBUGTIMER = 0
 DEF DEBUGPRINT = 0
 
-
 from timeit import default_timer # DEBUG APENAS
 
 cimport cython
@@ -75,11 +74,10 @@ cdef local_sparsity(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy, Py_ssi
     hamming_asym_time_ndarray[time_width_lobe+1:] = 0
 
     # DEBUG
-    
-    #hamming_freq_sparsity_ndarray = 2*np.ones(freq_width_sparsity)
-    #hamming_time_ndarray = 3*np.ones(time_width)
-    #hamming_freq_energy_ndarray = 2*np.ones(freq_width_energy)
-    #hamming_asym_time_ndarray = 3*np.ones(time_width)
+    # hamming_freq_sparsity_ndarray = 2*np.ones(freq_width_sparsity)
+    # hamming_time_ndarray = 3*np.ones(time_width)
+    # hamming_freq_energy_ndarray = 2*np.ones(freq_width_energy)
+    # hamming_asym_time_ndarray = 5*np.ones(time_width)
 
 
     cdef double[:] hamming_freq_energy = hamming_freq_energy_ndarray
@@ -412,9 +410,6 @@ cdef local_sparsity(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy, Py_ssi
         for p in range(P):
             print(f"p = {p}")
             print_arr(energy[p,:,:])
-
-        print("Combinação final.")
-        print_arr(result)
 
     IF DEBUGTIMER:
         time_f = default_timer()

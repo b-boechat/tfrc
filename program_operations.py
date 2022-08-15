@@ -1,3 +1,4 @@
+from email.mime import audio
 from audio_analysis import AudioAnalysis
 from debug import print_arr
 
@@ -22,5 +23,8 @@ def generate_tfrc(audio_file_path, t_inicio, t_fim, resolutions,
 
 def restore_tfrc(input_file_path):
     audio_analysis = AudioAnalysis.from_file(input_file_path)
-    audio_analysis.plot()
-    #audio_analysis.plot2()
+
+    audio_analysis.plot2()
+
+    #print(np.max(audio_analysis.combined_tfr))    
+    #print_arr(audio_analysis.combined_tfr[48:65, 0:17])

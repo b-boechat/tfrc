@@ -19,6 +19,7 @@ from matlab_integration import fast_local_sparsity_matlab_wrapper, \
 
 from lsm import local_sparsity_wrapper
 from lsm_baseline import local_sparsity_baseline_wrapper
+from lsm_baseline_interpol import local_sparsity_baseline_interpolation_wrapper
 from lukin_todd import lukin_todd_wrapper
 from lukin_todd_v1 import lukin_todd_v1_wrapper
 from lukin_todd_baseline import lukin_todd_baseline_wrapper
@@ -48,6 +49,10 @@ combination_methods = {
         "name" : "Local Sparsity Method (Baseline)",
         "function" : local_sparsity_baseline_wrapper
     },
+    "lsm_baseline_interpol": {
+        "name" : "Local Sparsity Method with Interpolation (Baseline)",
+        "function" : local_sparsity_baseline_interpolation_wrapper
+    }, 
     "lsm_feulo": {
         "name" : "Local Sparsity (Feulo)",
         "function" : feulo_spectrogram_local_sparsity_wrapper

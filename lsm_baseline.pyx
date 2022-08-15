@@ -11,7 +11,6 @@ IF DEBUGPRINT:
     import colorama
     from debug import print_arr
 
-
 IF DEBUGTIMER:
     from libc.time cimport clock_t, clock
 
@@ -153,6 +152,7 @@ cdef local_sparsity_baseline(double[:,:,::1] X_orig, Py_ssize_t freq_width_energ
 
     
     # ############ }}}
+
 
     ############ Cálculo da função de energia local {{{ 
 

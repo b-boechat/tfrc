@@ -11,6 +11,10 @@ ext_modules = [
         ["lsm_baseline.pyx"]
     ),
     Extension(
+        "lsm_baseline_interpol",
+        ["lsm_baseline_interpol.pyx"]
+    ),
+    Extension(
         "lukin_todd",
         ["lukin_todd.pyx"]
     ),

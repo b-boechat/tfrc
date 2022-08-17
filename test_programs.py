@@ -189,11 +189,14 @@ def test_method(method):
     #arr = create_2d_arr()
     #arr = create_3d_arr()
 
-    arr = np.arange(3*6*6).reshape(3, 6, 6).astype(np.double)
+    arr = np.arange(3*7*6).reshape(3, 7, 6).astype(np.double) + 1
     print("p = 0:") 
     print_arr(arr[0])
     print("p = 1:") 
     print_arr(arr[1])
+    print("p = 2:") 
+    print_arr(arr[2])
+
 
     if method == "lt":
         print("Lukin-Todd")
@@ -230,7 +233,7 @@ def test_method(method):
         print_arr(result_feulo)
 
     elif method == "lsm_interpol":
-        result_interpol = local_sparsity_baseline_interpolation_wrapper(arr, freq_width_energy=3, freq_width_sparsity=5, time_width=5, zeta=10)
+        result_interpol = local_sparsity_baseline_interpolation_wrapper(arr, freq_width_energy=3, freq_width_sparsity=3, time_width=3, zeta=10)
 
 
     else:
@@ -240,11 +243,11 @@ def test_method(method):
 if __name__ == "__main__":
     #test_method("lt")
     #test_method("lsm")
-    #test_method("lsm_interpol")
+    test_method("lsm_interpol")
 
     #compare_representations("backup/normal.bkp", "backup/interpol.bkp", range_i=[1820, 1833], range_j=[24, 35]) # Região de baixa energia, altos erros sem o epsilon.
     #compare_representations("backup/normal.bkp", "backup/interpol.bkp", range_i = [48, 65], range_j = [0, 17]) # Região de alta energia
-    compare_representations("backup/normal.bkp", "backup/interpol.bkp", range_i = [76, 89], range_j = [92, 105]) # Região de maior erro relativo com o epsilon, transição entre energias.
+    #compare_representations("backup/normal.bkp", "backup/interpol.bkp", range_i = [76, 89], range_j = [92, 105]) # Região de maior erro relativo com o epsilon, transição entre energias.
 
 
     #interpol_array_from_csv("dev/csv_smearing/2048.csv", 2, 2, range_i = [30, 41], range_j = [10, 19])

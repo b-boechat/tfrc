@@ -19,10 +19,10 @@ def local_sparsity_baseline_interpolation_wrapper(X, freq_width_energy=15, freq_
     #print(f"freq_width_sparsity = {freq_width_sparsity}\nfreq_width_energy = {freq_width_energy}\ntime_width = {time_width}\nzeta = {zeta}")
     return local_sparsity_baseline_interpolation(X, freq_width_energy, freq_width_sparsity, time_width, zeta)
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False) 
-#@cython.nonecheck(False)
-#@cython.cdivision(True)
+@cython.boundscheck(False)
+@cython.wraparound(False) 
+@cython.nonecheck(False)
+@cython.cdivision(True)
 cdef local_sparsity_baseline_interpolation(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy, Py_ssize_t freq_width_sparsity, Py_ssize_t time_width, double zeta):
 
     cdef:
@@ -82,33 +82,33 @@ cdef local_sparsity_baseline_interpolation(double[:,:,::1] X_orig, Py_ssize_t fr
     result_ndarray = np.zeros((K, M), dtype=np.double)
     cdef double[:, :] result = result_ndarray
 
-    # Variáveis referentes ao cálculo da função de esparsidade
+    # Container e variáveis referentes ao cálculo da função de esparsidade
     sparsity_ndarray = epsilon * np.ones((P, K, M), dtype=np.double)
     cdef double[:,:,:] sparsity = sparsity_ndarray
     cdef double arr_norm, gini
 
+    # Container que armazena as energias locais. 
     energy_ndarray = epsilon * np.ones((P, K, M), dtype=np.double)
     cdef double[:,:,:] energy = energy_ndarray
 
-
+    # Armazena o passo de interpolação em cada direção. interpolation_steps[i, j] -> Interpolações para p = i. j = 0: na frequência; j = 1: no tempo
+    interpolation_steps_ndarray = np.array([[4, 1], [2, 2], [1, 4]], dtype=np.intp)
+    cdef Py_ssize_t[:,:] interpolation_steps = interpolation_steps_ndarray
 
     # Variáveis referentes à combinação dos espectrogramas.
     cdef double max_sparsity, min_local_energy, choosen_tfr_local_energy, sparsity_product, sparsity_ratio, sparsity_ratio_sum
 
     ############ Cálculo da função de esparsidade local {{{
 
-    # Itera pelos espectrogramas.
     for p in range(P):
+    
         IF DEBUGPRINT:
             print(f"Padded X[{p}]")
-            print_arr(X_ndarray[p], [freq_width_lobe, K + freq_width_lobe, time_width_lobe, M + time_width_lobe], colorama.Fore.CYAN)
+            print_arr(X_ndarray[p], [max_freq_width_lobe, K + max_freq_width_lobe, time_width_lobe, M + time_width_lobe], colorama.Fore.CYAN)
         
-        IF DEBUGTIMER:
-            time_i = clock()
-
-        for k in range(max_freq_width_lobe, K + max_freq_width_lobe):
-            for m in range(time_width_lobe, M + time_width_lobe):
-
+        # Itera pelas janelas de cálculo, levando em conta os passos de interpolação.
+        for k in range(max_freq_width_lobe, K + max_freq_width_lobe, interpolation_steps[p, 0]):
+            for m in range(time_width_lobe, M + time_width_lobe, interpolation_steps[p, 1]):
                 # Copia a região janelada para o vetor de cálculo, multiplicando pelas janelas de Hamming.
                 for i in range(freq_width_sparsity):
                     for j in range(time_width):
@@ -120,64 +120,83 @@ cdef local_sparsity_baseline_interpolation(double[:,:,::1] X_orig, Py_ssize_t fr
                     print(list(calc_vector))
 
                 # Ordena a região
-                
                 calc_vector_ndarray.sort()
-
-                #for i_sort in range(1, combined_size_sparsity):
-                #    key = calc_vector[i_sort]
-                #    j_sort = i_sort - 1
-                #    while j_sort >= 0 and key < calc_vector[j_sort]:
-                #        calc_vector[j_sort + 1] = calc_vector[j_sort]
-                #        j_sort = j_sort - 1
-                #    calc_vector[j_sort + 1] = key        
-
 
                 IF DEBUGPRINT:
                     print("Vetor de cálculo ordenado:")
                     print(list(calc_vector))
 
+                
                 # Calcula a função de esparsidade.
-
                 arr_norm = 0.0
                 gini = 0.0
-                
                 for i in range(combined_size_sparsity):
                     arr_norm = arr_norm + calc_vector[i]
                     gini = gini - 2*calc_vector[i] * (combined_size_sparsity - i - 0.5)/ (<double> combined_size_sparsity)
-
                 gini = 1 + gini/(arr_norm + epsilon)
-
                 # Índice para a matriz de esparsidade local deve ser ajustado porque essa não tem zero-padding.
                 sparsity[p, k - max_freq_width_lobe, m - time_width_lobe] += gini
 
-    
+        # Devido ao passo de interpolação na janela, é possível que faltem algumas janelas no fim.
+        # Por exemplo, para a frequência: sendo mfwl := max_freq_width_lobe e isf := interpolation_steps[p, 0]
+        # As janelas pré-interpolação estão nas posições de frequência: mfwl, mfwl + isf, mfwl + 2isf, ... , mfwl + (K - 1)//isf * isf
+        # Analogamente, sendo twl := time_width_lobe e ist := interpolation_steps[p, 1],
+        # A última posição no tempo das janelas é twl + (M - 1)//ist * ist
+        # Logo, é preciso completar o cálculo na região R1 U R2, sendo R1 = {(k, m): k > (K - 1)//isf * isf} e R2 = {(k, m): m > twl + (M - 1)//ist * ist} 
+
+        IF DEBUGPRINT:
+            print(f"p = {p}\n")
+            print("Região R1:")
+            print_arr(X_ndarray[p], 
+                [(max_freq_width_lobe + (K - 1)//interpolation_steps[p, 0] * interpolation_steps[p, 0]) + 1, K + max_freq_width_lobe, 
+                time_width_lobe, M + time_width_lobe], colorama.Fore.MAGENTA)
+
+
+            print("Região R2:")
+            print_arr(X_ndarray[p], 
+                [max_freq_width_lobe, K + max_freq_width_lobe, 
+                (time_width_lobe + (M - 1)//interpolation_steps[p, 1] * interpolation_steps[p, 1]) + 1, M + time_width_lobe], colorama.Fore.MAGENTA)
+
+        # Região R1
+
+        for k in range( (max_freq_width_lobe + (K - 1)//interpolation_steps[p, 0] * interpolation_steps[p, 0]) + 1, K + max_freq_width_lobe):
+            for m in range(time_width_lobe, M + time_width_lobe):
+                for i in range(freq_width_sparsity):
+                    for j in range(time_width):
+                        calc_vector[i*time_width + j] = X[p, k - freq_width_sparsity_lobe + i, m - time_width_lobe + j] * \
+                                hamming_freq_sparsity[i] * hamming_time[j] 
+                calc_vector_ndarray.sort()
+                arr_norm = 0.0
+                gini = 0.0
+                for i in range(combined_size_sparsity):
+                    arr_norm = arr_norm + calc_vector[i]
+                    gini = gini - 2*calc_vector[i] * (combined_size_sparsity - i - 0.5)/ (<double> combined_size_sparsity)
+                gini = 1 + gini/(arr_norm + epsilon)
+                sparsity[p, k - max_freq_width_lobe, m - time_width_lobe] += gini
+
+        # Região R2 - R1
+        for m in range( (time_width_lobe + (M - 1)//interpolation_steps[p, 1] * interpolation_steps[p, 1]) + 1, M + time_width_lobe ):
+            for k in range(max_freq_width_lobe, (max_freq_width_lobe + (K - 1)//interpolation_steps[p, 0] * interpolation_steps[p, 0]) + 1):
+                for i in range(freq_width_sparsity):
+                    for j in range(time_width):
+                        calc_vector[i*time_width + j] = X[p, k - freq_width_sparsity_lobe + i, m - time_width_lobe + j] * \
+                                hamming_freq_sparsity[i] * hamming_time[j] 
+                calc_vector_ndarray.sort()
+                arr_norm = 0.0
+                gini = 0.0
+                for i in range(combined_size_sparsity):
+                    arr_norm = arr_norm + calc_vector[i]
+                    gini = gini - 2*calc_vector[i] * (combined_size_sparsity - i - 0.5)/ (<double> combined_size_sparsity)
+                gini = 1 + gini/(arr_norm + epsilon)
+                sparsity[p, k - max_freq_width_lobe, m - time_width_lobe] += gini
+
+
     # ############ }}}
-
-
-    ############ Cálculo da função de energia local {{{ 
-
-    for p in range(P):
-        for k in range(max_freq_width_lobe, K + max_freq_width_lobe):
-           for m in range(time_width_lobe, M + time_width_lobe):
-                # Calcula a energia local no segmento definido por (p, k, m).
-                
-                for i in range(freq_width_energy):
-                   for j in range(time_width):
-                       energy[p, k - max_freq_width_lobe, m - time_width_lobe] = energy[p, k - max_freq_width_lobe, m - time_width_lobe] + X[p, k - freq_width_energy_lobe + i, m - time_width_lobe + j] \
-                           * hamming_freq_energy[i] * hamming_asym_time[j]
-
-                IF DEBUGPRINT:
-                    print_arr(X_ndarray[p], [k - freq_width_energy_lobe, k + freq_width_energy_lobe + 1, m - time_width_lobe, m + time_width_lobe + 1])
-                    print(f"Energy (p = {p}, k = {k} - {max_freq_width_lobe}, m = {m} - {time_width_lobe})")
-                    print_arr(energy_ndarray[p], [k - max_freq_width_lobe, k - max_freq_width_lobe + 1, m - time_width_lobe, m - time_width_lobe + 1])
-
-
-
-    ############## }}}
 
     ############## {{{ Interpolação da esparsidade
 
-    sparsity_orig = np.copy(sparsity_ndarray)
+    IF DEBUGPRINT:
+        sparsity_orig = np.copy(sparsity_ndarray)
 
     cdef Py_ssize_t max_row_slice, max_col_slice
 
@@ -233,6 +252,28 @@ cdef local_sparsity_baseline_interpolation(double[:,:,::1] X_orig, Py_ssize_t fr
             print_arr(sparsity_orig[p])
             print("Interpolado")
             print_arr(sparsity[p])
+
+
+    ############ Cálculo da função de energia local {{{ 
+
+    for p in range(P):
+        for k in range(max_freq_width_lobe, K + max_freq_width_lobe):
+           for m in range(time_width_lobe, M + time_width_lobe):
+                # Calcula a energia local no segmento definido por (p, k, m).
+                
+                for i in range(freq_width_energy):
+                   for j in range(time_width):
+                       energy[p, k - max_freq_width_lobe, m - time_width_lobe] = energy[p, k - max_freq_width_lobe, m - time_width_lobe] + X[p, k - freq_width_energy_lobe + i, m - time_width_lobe + j] \
+                           * hamming_freq_energy[i] * hamming_asym_time[j]
+
+                IF DEBUGPRINT:
+                    print_arr(X_ndarray[p], [k - freq_width_energy_lobe, k + freq_width_energy_lobe + 1, m - time_width_lobe, m + time_width_lobe + 1])
+                    print(f"Energy (p = {p}, k = {k} - {max_freq_width_lobe}, m = {m} - {time_width_lobe})")
+                    print_arr(energy_ndarray[p], [k - max_freq_width_lobe, k - max_freq_width_lobe + 1, m - time_width_lobe, m - time_width_lobe + 1])
+
+
+
+    ############## }}}
 
 
     # ############ Combinação por Esparsidade Local e compensação por Energia Local {{

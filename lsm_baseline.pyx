@@ -19,10 +19,10 @@ def local_sparsity_baseline_wrapper(X, freq_width_energy=15, freq_width_sparsity
     #print(f"freq_width_sparsity = {freq_width_sparsity}\nfreq_width_energy = {freq_width_energy}\ntime_width = {time_width}\nzeta = {zeta}")
     return local_sparsity_baseline(X, freq_width_energy, freq_width_sparsity, time_width, zeta)
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False) 
-#@cython.nonecheck(False)
-#@cython.cdivision(True)
+@cython.boundscheck(False)
+@cython.wraparound(False) 
+@cython.nonecheck(False)
+@cython.cdivision(True)
 cdef local_sparsity_baseline(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy, Py_ssize_t freq_width_sparsity, Py_ssize_t time_width, double zeta):
 
     cdef:
@@ -101,7 +101,7 @@ cdef local_sparsity_baseline(double[:,:,::1] X_orig, Py_ssize_t freq_width_energ
     for p in range(P):
         IF DEBUGPRINT:
             print(f"Padded X[{p}]")
-            print_arr(X_ndarray[p], [freq_width_lobe, K + freq_width_lobe, time_width_lobe, M + time_width_lobe], colorama.Fore.CYAN)
+            print_arr(X_ndarray[p], [max_freq_width_lobe, K + max_freq_width_lobe, time_width_lobe, M + time_width_lobe], colorama.Fore.CYAN)
         
         IF DEBUGTIMER:
             time_i = clock()

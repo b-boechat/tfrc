@@ -140,9 +140,10 @@ reconstructed/*
 # Implementações em Python puro do Guilherme Feulo
 
 noname/*
-!noname/sls.py
 !noname/__init__.py
-
+!noname/sls.py
+!noname/lukintodd.py
+!noname/fhls.py
 
 # Implementações em Matlab do Maurício.
 

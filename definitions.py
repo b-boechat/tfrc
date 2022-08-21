@@ -6,7 +6,8 @@
 
 from binwise_combination import median_combination, mean_combination
 from feulo_integration import feulo_spectrogram_local_sparsity_wrapper, \
-                            feulo_lukin_todd_wrapper
+                            feulo_lukin_todd_wrapper, \
+                            feulo_fast_local_sparsity_wrapper
 from matlab_integration import fast_local_sparsity_matlab_wrapper, \
                             local_sparsity_matlab_wrapper, \
                             fast_local_sparsity_matlab_wrapper, \
@@ -60,6 +61,10 @@ combination_methods = {
     "lsm_matlab": {
         "name" : "Local Sparsity (Maurício)",
         "function" : local_sparsity_matlab_wrapper
+    },
+    "fls_feulo": {
+        "name" : "Fast Local Sparsity (Feulo)",
+        "function" : feulo_fast_local_sparsity_wrapper
     },
     "fls_matlab": {
         "name" : "Fast Local Sparsity (Maurício)",

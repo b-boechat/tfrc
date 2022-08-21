@@ -1,4 +1,4 @@
-from noname import spectrogram_local_sparsity, spectrogram_comb_Lukin_Todd
+from noname import spectrogram_local_sparsity, spectrogram_comb_Lukin_Todd, spectrogram_comb_FastHoyerLocalSparsity
 import numpy as np
 
 def feulo_spectrogram_local_sparsity_wrapper(X, freq_width_sparsity=39, freq_width_energy=15, time_width=11, zeta=80):
@@ -9,3 +9,6 @@ def feulo_spectrogram_local_sparsity_wrapper(X, freq_width_sparsity=39, freq_wid
 
 def feulo_lukin_todd_wrapper(X, freq_width=39, time_width=11, eta=8.0):
     return spectrogram_comb_Lukin_Todd(np.transpose(X, (1, 2, 0)), size_w_S=[freq_width, time_width], eta=eta)
+
+def feulo_fast_local_sparsity_wrapper(X, freq_width=39, time_width=11, eta=8.0):
+    return spectrogram_comb_FastHoyerLocalSparsity(np.transpose(X, (1, 2, 0)), size_W_m_k=[freq_width, time_width], eta=eta)

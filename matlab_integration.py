@@ -30,7 +30,7 @@ def local_sparsity_matlab_wrapper(X, freq_width_sparsity=39, freq_width_energy=1
             float(1)) #eta
             
 
-def fast_local_sparsity_matlab_wrapper(X, freq_width=13, time_width=7, eta=20):
+def fast_local_sparsity_matlab_wrapper(X, freq_width=39, time_width=11, eta=8):
     return matlab_wrapper("TFR_Methods/FHLS", "spectrogram_comb_FastHoyerLocalSparsity",
         matlab.double(np.transpose(X, (1, 2, 0)).tolist()),
         matlab.double([freq_width, time_width]),

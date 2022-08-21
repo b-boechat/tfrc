@@ -9,10 +9,14 @@ import pickle
 from lukin_todd import lukin_todd_wrapper
 from lukin_todd_v1 import lukin_todd_v1_wrapper
 from lukin_todd_baseline import lukin_todd_baseline_wrapper
+
 from lsm import local_sparsity_wrapper
 from lsm_baseline import local_sparsity_baseline_wrapper
 from lsm_baseline_interpol import local_sparsity_baseline_interpolation_wrapper
-from feulo_integration import feulo_lukin_todd_wrapper, feulo_spectrogram_local_sparsity_wrapper
+
+from fls import fast_local_sparsity_wrapper
+
+from feulo_integration import feulo_lukin_todd_wrapper, feulo_spectrogram_local_sparsity_wrapper, feulo_fast_local_sparsity_wrapper
 
 def compare_representations(bkp1_path, bkp2_path, range_i=[1820, 1833], range_j=[24, 35], epsilon = 10e-5):
 
@@ -236,6 +240,16 @@ def test_method(method):
         result_interpol = local_sparsity_baseline_interpolation_wrapper(arr, freq_width_energy=3, freq_width_sparsity=3, time_width=3, zeta=10)
 
 
+    elif method == "fls":
+        print("\n\n\n==========\nCython:\n\n=============\n\n\n")
+        result_cython = fast_local_sparsity_wrapper(arr, freq_width=3, time_width=3, eta=2)   
+        print_arr(result_cython, round_digs=6)
+
+        print("\n\n\n==========\nFeulo:\n\n=============\n\n\n")
+        result_feulo = feulo_fast_local_sparsity_wrapper(arr, freq_width=3, time_width=3, eta=2)   
+        print_arr(result_feulo, round_digs=6)
+
+
     else:
         print("Especifique o método")
 
@@ -243,7 +257,8 @@ def test_method(method):
 if __name__ == "__main__":
     #test_method("lt")
     #test_method("lsm")
-    test_method("lsm_interpol")
+    #test_method("lsm_interpol")
+    test_method("fls")
 
     #compare_representations("backup/normal.bkp", "backup/interpol.bkp", range_i=[1820, 1833], range_j=[24, 35]) # Região de baixa energia, altos erros sem o epsilon.
     #compare_representations("backup/normal.bkp", "backup/interpol.bkp", range_i = [48, 65], range_j = [0, 17]) # Região de alta energia

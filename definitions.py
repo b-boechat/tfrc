@@ -21,9 +21,13 @@ from matlab_integration import fast_local_sparsity_matlab_wrapper, \
 from lsm import local_sparsity_wrapper
 from lsm_baseline import local_sparsity_baseline_wrapper
 from lsm_baseline_interpol import local_sparsity_baseline_interpolation_wrapper
+
 from lukin_todd import lukin_todd_wrapper
 from lukin_todd_v1 import lukin_todd_v1_wrapper
 from lukin_todd_baseline import lukin_todd_baseline_wrapper
+
+from fls import fast_local_sparsity_wrapper
+
 from swgm import swgm_wrapper
 
 
@@ -61,6 +65,10 @@ combination_methods = {
     "lsm_matlab": {
         "name" : "Local Sparsity (Maurício)",
         "function" : local_sparsity_matlab_wrapper
+    },
+    "fls": {
+        "name" : "Fast Local Sparsity",
+        "function" : fast_local_sparsity_wrapper
     },
     "fls_feulo": {
         "name" : "Fast Local Sparsity (Feulo)",

@@ -14,6 +14,7 @@ ext_modules = [
         "lsm_baseline_interpol",
         ["lsm_baseline_interpol.pyx"]
     ),
+
     Extension(
         "lukin_todd",
         ["lukin_todd.pyx"]
@@ -26,6 +27,12 @@ ext_modules = [
         "lukin_todd_baseline",
         ["lukin_todd_baseline.pyx"]
     ),
+
+    Extension(
+        "fls",
+        ["fls.pyx"]
+    ),
+
     Extension(
         "swgm",
         ["swgm.pyx"]

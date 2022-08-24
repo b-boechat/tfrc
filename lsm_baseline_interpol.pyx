@@ -5,14 +5,14 @@ import numpy as np
 cimport cython
 from libc.math cimport INFINITY, pow
 DEF DEBUGPRINT = 0
-DEF DEBUGTIMER = 0
+DEF DEBUGTIMER = 1
 
 IF DEBUGPRINT:
     import colorama
     from debug import print_arr
 
 IF DEBUGTIMER:
-    from libc.time cimport clock_t, clock
+    from libc.time cimport clock_t, clock, CLOCKS_PER_SEC
 
 
 def local_sparsity_baseline_interpolation_wrapper(X, freq_width_energy=15, freq_width_sparsity=39, time_width=11, zeta = 80):
@@ -45,7 +45,8 @@ cdef local_sparsity_baseline_interpolation(double[:,:,::1] X_orig, Py_ssize_t fr
     IF DEBUGTIMER:
         cdef:
             clock_t time_i, time_f 
-            double timer_initial_copy = 0, timer_initial_sort = 0, timer_new_merge = 0 
+            double timer_copy = 0.0
+            double timer_sort = 0.0
 
 
     max_freq_width_lobe = freq_width_energy_lobe
@@ -109,18 +110,33 @@ cdef local_sparsity_baseline_interpolation(double[:,:,::1] X_orig, Py_ssize_t fr
         # Itera pelas janelas de cálculo, levando em conta os passos de interpolação.
         for k in range(max_freq_width_lobe, K + max_freq_width_lobe, interpolation_steps[p, 0]):
             for m in range(time_width_lobe, M + time_width_lobe, interpolation_steps[p, 1]):
+
+                IF DEBUGTIMER:
+                    time_i = clock()
+
                 # Copia a região janelada para o vetor de cálculo, multiplicando pelas janelas de Hamming.
                 for i in range(freq_width_sparsity):
                     for j in range(time_width):
                         calc_vector[i*time_width + j] = X[p, k - freq_width_sparsity_lobe + i, m - time_width_lobe + j] * \
                                 hamming_freq_sparsity[i] * hamming_time[j]        
 
+                IF DEBUGTIMER:
+                    time_f = clock()
+                    timer_copy += time_f - time_i
+
                 IF DEBUGPRINT:
                     print("Vetor de cálculo:")
                     print(list(calc_vector))
 
+                IF DEBUGTIMER:
+                    time_i = clock()
+                
                 # Ordena a região
                 calc_vector_ndarray.sort()
+
+                IF DEBUGTIMER:
+                    time_f = clock()
+                    timer_sort += time_f - time_i
 
                 IF DEBUGPRINT:
                     print("Vetor de cálculo ordenado:")
@@ -334,6 +350,9 @@ cdef local_sparsity_baseline_interpolation(double[:,:,::1] X_orig, Py_ssize_t fr
             print(f"Energia. p = {p}")
             print_arr(energy_ndarray[p])
 
+
+    IF DEBUGTIMER:
+        print(f"Time copy: {timer_copy/CLOCKS_PER_SEC}\nTime sort: {timer_sort/CLOCKS_PER_SEC}")
 
     return result_ndarray
 

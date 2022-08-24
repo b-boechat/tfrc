@@ -5,14 +5,14 @@ import numpy as np
 cimport cython
 from libc.math cimport INFINITY, pow
 DEF DEBUGPRINT = 0
-DEF DEBUGTIMER = 0
+DEF DEBUGTIMER = 1
 
 IF DEBUGPRINT:
     import colorama
     from debug import print_arr
 
 IF DEBUGTIMER:
-    from libc.time cimport clock_t, clock
+    from libc.time cimport clock_t, clock, CLOCKS_PER_SEC
 
 
 def local_sparsity_interpolation_v1_wrapper(X, freq_width_energy=15, freq_width_sparsity=39, time_width=11, zeta = 80):
@@ -45,7 +45,8 @@ cdef local_sparsity_interpolation_v1(double[:,:,::1] X_orig, Py_ssize_t freq_wid
     IF DEBUGTIMER:
         cdef:
             clock_t time_i, time_f 
-            double timer_initial_copy = 0, timer_initial_sort = 0, timer_new_merge = 0 
+            double timer_copy = 0.0
+            double timer_sort = 0.0
 
 
     max_freq_width_lobe = freq_width_energy_lobe
@@ -56,17 +57,12 @@ cdef local_sparsity_interpolation_v1(double[:,:,::1] X_orig, Py_ssize_t freq_wid
     X_ndarray = np.pad(X_orig, ((0, 0), (max_freq_width_lobe, max_freq_width_lobe), (time_width_lobe, time_width_lobe)))
     cdef double[:, :, :] X = X_ndarray
 
-    # Calcula as janelas de Hamming utilizadas no algoritmo, separadamente para cada eixo.
+    # Calcula as janelas de Hamming utilizadas para o cálculo de energia local do algoritmo, separadamente para cada eixo.
     hamming_freq_energy_ndarray = np.hamming(freq_width_energy)
     hamming_freq_sparsity_ndarray = np.hamming(freq_width_sparsity)
     hamming_time_ndarray = np.hamming(time_width)
     hamming_asym_time_ndarray = np.hamming(time_width)
     hamming_asym_time_ndarray[time_width_lobe+1:] = 0
-
-    # hamming_freq_sparsity_ndarray = 2*np.ones(freq_width_sparsity)
-    # hamming_time_ndarray = 3*np.ones(time_width)
-    # hamming_freq_energy_ndarray = 2*np.ones(freq_width_energy)
-    # hamming_asym_time_ndarray = 5*np.ones(time_width)
     
     cdef double[:] hamming_freq_energy = hamming_freq_energy_ndarray
     cdef double[:] hamming_freq_sparsity = hamming_freq_sparsity_ndarray
@@ -117,18 +113,32 @@ cdef local_sparsity_interpolation_v1(double[:,:,::1] X_orig, Py_ssize_t freq_wid
         for k in range(max_freq_width_lobe, K + max_freq_width_lobe, interpolation_steps[p, 0]):
             for m in range(time_width_lobe, M + time_width_lobe, interpolation_steps[p, 1]):
 
+                IF DEBUGTIMER:
+                    time_i = clock()
+
                 # Copia a região janelada para o vetor de cálculo, multiplicando pelas janelas de Hamming.
                 for i in range(combined_size_sparsity):
                     calc_vector[i] = sparsity_window_flatten[window_sort_indexes[i]] * X[p, 
                         k - freq_width_sparsity_lobe + (window_sort_indexes[i] // time_width), 
                         m - time_width_lobe + (window_sort_indexes[i] % time_width)]
 
+                IF DEBUGTIMER:
+                    time_f = clock()
+                    timer_copy += time_f - time_i
+
                 IF DEBUGPRINT:
                     print("Vetor de cálculo:")
                     print(list(calc_vector))
 
+                IF DEBUGTIMER:
+                    time_i = clock()
+
                 # Ordena a região
-                calc_vector_ndarray.sort() # timsort in 1.17
+                calc_vector_ndarray.sort()
+
+                IF DEBUGTIMER:
+                    time_f = clock()
+                    timer_sort += time_f - time_i
 
                 IF DEBUGPRINT:
                     print("Vetor de cálculo ordenado:")
@@ -342,6 +352,8 @@ cdef local_sparsity_interpolation_v1(double[:,:,::1] X_orig, Py_ssize_t freq_wid
             print(f"Energia. p = {p}")
             print_arr(energy_ndarray[p])
 
+    IF DEBUGTIMER:
+        print(f"\nTime copy: {timer_copy/CLOCKS_PER_SEC}\nTime sort: {timer_sort/CLOCKS_PER_SEC}\n")
 
     return result_ndarray
 

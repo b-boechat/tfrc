@@ -20,7 +20,9 @@ from matlab_integration import fast_local_sparsity_matlab_wrapper, \
 
 from lsm import local_sparsity_wrapper
 from lsm_baseline import local_sparsity_baseline_wrapper
+
 from lsm_baseline_interpol import local_sparsity_baseline_interpolation_wrapper
+from lsm_interpol_v1 import local_sparsity_interpolation_v1_wrapper
 
 from lukin_todd import lukin_todd_wrapper
 from lukin_todd_v1 import lukin_todd_v1_wrapper
@@ -46,6 +48,7 @@ combination_methods = {
         "name" : "Binwise Mean",
         "function" : mean_combination
     },
+
     "lsm": {
         "name" : "Local Sparsity Method",
         "function" : local_sparsity_wrapper
@@ -54,6 +57,12 @@ combination_methods = {
         "name" : "Local Sparsity Method (Baseline)",
         "function" : local_sparsity_baseline_wrapper
     },
+    
+    "lsm_interpol_v1": {
+        "name" : "Local Sparsity Method with Interpolation (v1)",
+        "function" : local_sparsity_interpolation_v1_wrapper
+    }, 
+
     "lsm_baseline_interpol": {
         "name" : "Local Sparsity Method with Interpolation (Baseline)",
         "function" : local_sparsity_baseline_interpolation_wrapper

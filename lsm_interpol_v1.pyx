@@ -71,11 +71,14 @@ cdef local_sparsity_interpolation_v1(double[:,:,::1] X_orig, Py_ssize_t freq_wid
     
     # Janela de esparsidade achatada para uma dimensão. sparsity_window_flatten[i * time_width + j] = hamming na frequência (i) x hamming no tempo (j)
     sparsity_window_flatten_ndarray = np.outer(np.hamming(freq_width_sparsity), np.hamming(time_width)).flatten()
-    cdef double[:] sparsity_window_flatten = sparsity_window_flatten_ndarray
     
     # Índices que ordenam a janela. Usado para otimização.
     window_sort_indexes_ndarray = np.argsort(sparsity_window_flatten_ndarray).astype(np.intp)
     cdef Py_ssize_t[:] window_sort_indexes = window_sort_indexes_ndarray
+
+    # Ordena a janela com os índices calculados.
+    sparsity_window_flatten_ndarray = np.take_along_axis(sparsity_window_flatten_ndarray, window_sort_indexes_ndarray, axis=None)
+    cdef double[:] sparsity_window_flatten = sparsity_window_flatten_ndarray
 
     # Container que armazena uma janela de análise em um vetor.
     calc_vector_ndarray = np.zeros(combined_size_sparsity, dtype = np.double)
@@ -118,7 +121,7 @@ cdef local_sparsity_interpolation_v1(double[:,:,::1] X_orig, Py_ssize_t freq_wid
 
                 # Copia a região janelada para o vetor de cálculo, multiplicando pelas janelas de Hamming.
                 for i in range(combined_size_sparsity):
-                    calc_vector[i] = sparsity_window_flatten[window_sort_indexes[i]] * X[p, 
+                    calc_vector[i] = sparsity_window_flatten[i] * X[p, 
                         k - freq_width_sparsity_lobe + (window_sort_indexes[i] // time_width), 
                         m - time_width_lobe + (window_sort_indexes[i] % time_width)]
 

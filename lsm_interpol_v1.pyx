@@ -5,7 +5,7 @@ import numpy as np
 cimport cython
 from libc.math cimport INFINITY, pow
 DEF DEBUGPRINT = 0
-DEF DEBUGTIMER = 1
+DEF DEBUGTIMER = 0
 
 IF DEBUGPRINT:
     import colorama

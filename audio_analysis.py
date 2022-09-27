@@ -184,19 +184,21 @@ class AudioAnalysis():
         handlers = []
         for i in range(num_figures):
             handlers.append(plt.subplots())
+            handlers[i][0].set_size_inches(8, 4)
             img = librosa.display.specshow(librosa.amplitude_to_db(self.tfrs_tensor[i], ref=np.max),
                                            y_axis='log', x_axis='time',
                                            hop_length=self.hop_length, sr=self.audio.sample_rate,
                                            ax=handlers[i][1])
             handlers[i][1].set_title(
-                "STFT com janela de {} pontos".format(self.resolutions[i]))
+                "STFT with window size {}".format(self.resolutions[i]))
             handlers[i][0].colorbar(img, ax=handlers[i][1], format="%+2.0f dB")
         fig2, ax2 = plt.subplots()
+        fig2.set_size_inches(8, 4)
         img = librosa.display.specshow(librosa.amplitude_to_db(self.combined_tfr, ref=np.max),
                                        y_axis='log', x_axis='time',
                                        hop_length=self.hop_length, sr=self.audio.sample_rate,
                                        ax=ax2)
-        ax2.set_title("Combinação das STFTs usando o {}".format(self.method))
+        ax2.set_title("Combined representation using {}.".format(self.method))
         fig2.colorbar(img, ax=ax2, format="%+2.0f dB")
 
         plt.show()

@@ -320,12 +320,6 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
 
     ############ Combinação dos espectrogramas {{{
 
-    #for p in range(P):
-    #    print(f"p={p}")
-    #    print_arr(smearing[p,50:65,50:65])
-
-    # TODO tratar o caso não smoothed.
-
     for k in range(K):
         for m in range(M):
             weights_sum = 0.0

@@ -18,7 +18,18 @@ def generate_tfrc_wrapper(args):
     else:
         combination_params = dict()
 
-    generate_tfrc(audio_file_path=audio_file_path, t_inicio=args.crop_time[0], t_fim=args.crop_time[1], resolutions=args.resolutions,
+    if args.resolutions is None:  
+        if args.tfr_type == "stft":
+            args.resolutions = [1024, 2048, 4096]
+        else: #cqt
+            args.resolutions = [12, 24, 36]
+
+
+    print(args)
+
+    generate_tfrc(audio_file_path=audio_file_path, t_inicio=args.crop_time[0], t_fim=args.crop_time[1], 
+                  tfr_type=args.tfr_type, 
+                  resolutions=args.resolutions,
                   output_file_path=output_file_path,
                   combination_method=args.combination_method,
                   count_time=args.count_time,
@@ -65,8 +76,6 @@ def parse_params(params_str):
     return params
 
 
-
-
 def main():
 
     parser = argparse.ArgumentParser(description="Interface para o cálculo, armazenamento e visualização de combinações de representações tempo-frequenciais.")
@@ -82,16 +91,19 @@ def main():
     parser_generate.add_argument("-c", "--crop", dest="crop_time", type=int, nargs=2, metavar=("inicio", "fim"),
                         default=[None, None],
                         help="Tempo de início e fim (em segundos) demarcando o intervalo analisado.")
-    parser_generate.add_argument("-r", "--resolutions", dest="resolutions", type=int, nargs="+", default=[1024, 2048, 4096],
-                        help="Resoluções utilizadas nas RTFS. Referem-se ao espalhamento da janela temporal.")  # TODO Especificar número de pontos e hop length.
 
+    parser_generate.add_argument("-y", "--type", dest="tfr_type", metavar="TFR_TYPE", default="stft", choices=["stft", "cqt"],
+                        help="Tipo de representação tempo-frequencial.")
+    parser_generate.add_argument("-r", "--resolutions", dest="resolutions", type=int, nargs="+",
+                        help="""Resoluções utilizadas nas RTFS. Referem-se ao espalhamento da janela temporal.
+                        No caso de uma STFT, corresponde ao tamanho da janela, desconsiderando zero-padding. Default: [1024, 2048, 4096].
+                        No caso de uma CQT, corresponde à resolução equivalente em número de bins por oitava. Default: [12, 24, 36].""")  # TODO Especificar número de pontos e hop length.
     parser_generate.add_argument("-o", dest="output_file", metavar="OUTPUT_FILE", default="backup",
                         help=f"""Arquivo no qual as representações vão ser salvas como backup. (sem extensão, que é 
                                  entendida como \"{backup_files_extension}\", definida na variável \"backup_files_extension\" em \"definitions.py\". 
                                  Os backups são salvos na pasta \"{backup_folder}\", definida na variável \"backup_folder\" em \"definitions.py\"""")
     parser_generate.add_argument("-m", "--method", dest="combination_method", metavar="COMBINATION_METHOD", default="median",
-                        choices=list(combination_methods.keys()), # TODO É possível deixar assim enquanto a chamada para subprocess.call não está sendo feita no definitions.py
-                        #choices=["median", "mean", "lsm", "lsm_pure_python", "lsm_par", "lsm_feulo"], # TODO Algum workaround pra poder usar list(combination_methods.keys()), que por enquanto não é possível por causa do pyximport.
+                        choices=list(combination_methods.keys()),
                         help="Método de combinação a ser realizado.")
     parser_generate.add_argument("-t", "--time", dest="count_time", action="store_true",
                         help="Se especificado, são exibidos os tempos de cálculo dos espectrogramas e da combinação.")

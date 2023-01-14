@@ -1,5 +1,6 @@
 import argparse
 import re
+#import locale
 from program_operations import generate_tfrc, restore_tfrc
 from definitions import combination_methods, backup_files_extension, backup_folder, audio_folder
 
@@ -77,6 +78,9 @@ def parse_params(params_str):
 
 
 def main():
+
+    # Ajusta o locale para execução, para em usar vírgula em vez de ponto para decimal nos plots. TODO No momento, não funciona em conjunto com o usetex.
+    #locale.setlocale(locale.LC_NUMERIC, 'de_DE.UTF-8')
 
     parser = argparse.ArgumentParser(description="Interface para o cálculo, armazenamento e visualização de combinações de representações tempo-frequenciais.")
 

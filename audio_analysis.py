@@ -30,8 +30,7 @@ class AudioAnalysis():
             AudioAnalysis.from_file(file): Instancia um objeto AudioAnalysis a partir de uma análise previamente salva pela função self.save_to_file(file).
             self.calculate_tfr_combinations(method, **kwags): Calcula e salva a combinação de RTFs usando o método de combinação fornecida e as RTFs já calculadas.
             self.save_to_file(file_path): Salva o objeto atual AudioAnalysis no arquivo especificado. 
-            self.plot(): Plota as RTFs e a RTF combinada, em uma única figure. Funciona melhor para len(self.resolutions) = 3. Não pode ser chamada antes de self.calculate_tfr_combinations().
-            self.plot2(): Plota as RTFs e a RTF combinada, em figures separadas. Não pode ser chamada antes de self.calculate_tfr_combinations().
+            self.plot(): Plota as RTFs e a RTF combinada, em figures separadas. Não pode ser chamada antes de self.calculate_tfr_combinations().
     """
 
     def __init__(self, audio_file_path, t_inicio=None, t_fim=None, tfr_type="stft", resolutions=[1024, 2048, 4096], count_time=False):
@@ -162,7 +161,7 @@ class AudioAnalysis():
     def __calculate_stfts(self):
         self.tfrs_tensor = np.array([librosa.stft(self.audio.data, n_fft=self.n_fft,
                                                     hop_length=self.hop_length, win_length=resolution,
-                                                    window='hamming', center=False
+                                                    window='hamming', center=True
                                                     ) for resolution in self.resolutions])
 
         self.tfrs_tensor *= self.audio.energy / np.linalg.norm(self.tfrs_tensor, axis=(1, 2), keepdims=True)
@@ -219,26 +218,49 @@ class AudioAnalysis():
 
     #     plt.show()
 
-    def plot_stft(self):
+    def plot_stft(self, y_axis='linear', x_lim=None, y_lim=[0, 2000], show_title=False):
+
+        plt.rcParams['figure.figsize'] = (18, 9.6)
+        plt.rcParams['axes.labelsize'] = 36
+        plt.rcParams['xtick.labelsize'] = 34
+        plt.rcParams['ytick.labelsize'] = 34
+        plt.rcParams['font.family'] = 'cmr12'
+        plt.rcParams['text.usetex'] = True
+        #plt.rcParams['axes.formatter.use_locale'] = True
+
         num_figures = len(self.resolutions)
         handlers = []
         for i in range(num_figures):
             handlers.append(plt.subplots())
             img = librosa.display.specshow(librosa.power_to_db(self.tfrs_tensor[i], ref=np.max),
-                                           y_axis='log', x_axis='time',
+                                           y_axis=y_axis, x_axis='time',
+                                           n_fft=self.n_fft, win_length=self.resolutions[i],
                                            hop_length=self.hop_length, sr=self.audio.sample_rate,
-                                           ax=handlers[i][1])
-            handlers[i][1].set_title(
-                "STFT com janela de {} pontos".format(self.resolutions[i]))
+                                           ax=handlers[i][1], cmap='inferno')
+            if show_title:
+                handlers[i][1].set_title("STFT com janela de {} pontos".format(self.resolutions[i]))
+            handlers[i][1].set(xlabel='Tempo (s)')
+            handlers[i][1].set(ylabel='Frequência (Hz)')
+            handlers[i][1].set(xticks=[0, 0.15, 0.30, 0.45, 0.60, 0.75, 0.90])
+            handlers[i][1].set(xticklabels=["0", "0,15", "0,30", "0,45", "0,60", "0,75", "0,90"])
             handlers[i][0].colorbar(img, ax=handlers[i][1], format="%+2.0f dB")
+            if x_lim is not None:
+                plt.xlim(x_lim)
+            if y_lim is not None:
+                plt.ylim(y_lim)
         fig2, ax2 = plt.subplots()
         img = librosa.display.specshow(librosa.power_to_db(self.combined_tfr, ref=np.max),
-                                       y_axis='log', x_axis='time',
+                                       y_axis=y_axis, x_axis='time',
+                                       n_fft=self.n_fft, win_length=self.resolutions[i],
                                        hop_length=self.hop_length, sr=self.audio.sample_rate,
-                                       ax=ax2)
-        ax2.set_title("Combinação das STFTs usando o {}".format(self.method))
+                                       ax=ax2, cmap='inferno')
+        if show_title:
+            ax2.set_title("Combinação das STFTs usando o {}".format(self.method))
         fig2.colorbar(img, ax=ax2, format="%+2.0f dB")
-
+        if x_lim is not None:
+                plt.xlim(x_lim)
+        if y_lim is not None:
+                plt.ylim(y_lim)
         plt.show()
 
     def plot_cqt(self):
@@ -294,6 +316,7 @@ class Audio:
         self.t_inicio = t_inicio
         self.t_fim = t_fim
         self.data, self.sample_rate = self.__load_audio(audio_file_path, t_inicio, t_fim)
+
         self.energy = np.linalg.norm(self.data)
 
     def __load_audio(self, audio_file_path, t_inicio, t_fim):

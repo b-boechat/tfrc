@@ -218,7 +218,7 @@ class AudioAnalysis():
 
     #     plt.show()
 
-    def plot_stft(self, y_axis='linear', x_lim=None, y_lim=[0, 2000], show_title=False):
+    def plot_stft(self, y_axis='linear', x_lim=None, y_lim=4000, show_title=False):
 
         plt.rcParams['figure.figsize'] = (18, 9.6)
         plt.rcParams['axes.labelsize'] = 36
@@ -241,8 +241,8 @@ class AudioAnalysis():
                 handlers[i][1].set_title("STFT com janela de {} pontos".format(self.resolutions[i]))
             handlers[i][1].set(xlabel='Tempo (s)')
             handlers[i][1].set(ylabel='Frequência (Hz)')
-            handlers[i][1].set(xticks=[0, 0.15, 0.30, 0.45, 0.60, 0.75, 0.90])
-            handlers[i][1].set(xticklabels=["0", "0,15", "0,30", "0,45", "0,60", "0,75", "0,90"])
+            #handlers[i][1].set(xticks=[0, 0.15, 0.30, 0.45, 0.60, 0.75, 0.90])
+            #handlers[i][1].set(xticklabels=["0", "0,15", "0,30", "0,45", "0,60", "0,75", "0,90"])
             handlers[i][0].colorbar(img, ax=handlers[i][1], format="%+2.0f dB")
             if x_lim is not None:
                 plt.xlim(x_lim)

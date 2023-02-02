@@ -97,7 +97,7 @@ def main():
                         help="Tempo de início e fim (em segundos) demarcando o intervalo analisado.")
 
     parser_generate.add_argument("-y", "--type", dest="tfr_type", metavar="TFR_TYPE", default="stft", choices=["stft", "cqt"],
-                        help="Tipo de representação tempo-frequencial.")
+                        help="Tipo de representação tempo-frequencial. Pode ser \"stft\" ou \"cqt\". Default: \"stft\"")
     parser_generate.add_argument("-r", "--resolutions", dest="resolutions", type=int, nargs="+",
                         help="""Resoluções utilizadas nas RTFS. Referem-se ao espalhamento da janela temporal.
                         No caso de uma STFT, corresponde ao tamanho da janela, desconsiderando zero-padding. Default: [1024, 2048, 4096].

@@ -75,13 +75,13 @@ class AudioAnalysis():
             audio_analysis = pickle.load(input_file)
             return audio_analysis
 
-    def calculate_tfr_combination(self, method, **kwargs): #TODO Futuramente permitir guarda múltiplos tipos de combinações diferentes.
+    def calculate_tfr_combination(self, method, **kwargs):
         """
         Calcula e salva a combinação de RTFs usando o método de combinação fornecida e as RTFs já calculadas.
         Também salva o nome do método usado no atributo "method", para formatação do plot.
 
         :param method: String que contém entrada para algum método em "combination_methods", no arquivo "definitions.py".
-        :param kwargs: Argumentos chave-valor a serem passados para a função de combinação. TODO Receber os argumentos.
+        :param kwargs: Argumentos chave-valor a serem passados para a função de combinação.
         :return: None.
         """
         if self.count_time:
@@ -119,7 +119,7 @@ class AudioAnalysis():
         :param resolutions: Lista de resoluções fornecidas.
         :return: None.
         """
-        # TODO Usar interpolação ou permitir maior flexibilidade na escolha dos parâmetros.
+        # TODO permitir maior flexibilidade na escolha dos parâmetros.
 
         max_resolution = max(self.resolutions)
         min_resolution = min(self.resolutions)
@@ -143,7 +143,7 @@ class AudioAnalysis():
         self.hop_length = 512
         self.f_min = 50
         self.bins_per_octave = self.resolutions[-1] # Alinha as representações com o maior número de bins por oitava especificado.
-        self.n_bins = self.bins_per_octave * 7 # Utilizando 7 oitavas começando em f_min = 50, como é na implementação do Maurício.
+        self.n_bins = self.bins_per_octave * 8 # Utilizando 7 oitavas começando em f_min = 50, como é na implementação do Maurício.
         self.filter_scales = [B/self.bins_per_octave for B in self.resolutions]
 
         #print(self.filter_scales)
@@ -218,15 +218,14 @@ class AudioAnalysis():
 
     #     plt.show()
 
-    def plot_stft(self, y_axis='linear', x_lim=None, y_lim=4000, show_title=False):
-
+    def plot_stft(self, y_axis='linear', x_lim=None, y_lim=4000, show_title=False, show=True):
         plt.rcParams['figure.figsize'] = (18, 9.6)
         plt.rcParams['axes.labelsize'] = 36
         plt.rcParams['xtick.labelsize'] = 34
         plt.rcParams['ytick.labelsize'] = 34
         plt.rcParams['font.family'] = 'cmr12'
         plt.rcParams['text.usetex'] = True
-        #plt.rcParams['axes.formatter.use_locale'] = True
+        plt.rcParams['axes.formatter.use_locale'] = True
 
         num_figures = len(self.resolutions)
         handlers = []
@@ -261,9 +260,12 @@ class AudioAnalysis():
                 plt.xlim(x_lim)
         if y_lim is not None:
                 plt.ylim(y_lim)
-        plt.show()
+        if show:
+            plt.show()
+        return handlers, fig2, ax2
 
-    def plot_cqt(self):
+    def plot_cqt(self, show_title=False, show=True):
+        #plt.rcParams['axes.formatter.use_locale'] = True
         num_figures = len(self.resolutions)
         handlers = []
         for i in range(num_figures):
@@ -273,8 +275,11 @@ class AudioAnalysis():
                                            hop_length=self.hop_length, sr=self.audio.sample_rate,
                                            fmin=self.f_min, bins_per_octave=self.bins_per_octave, tuning=0.0,                                  
                                            ax=handlers[i][1])
-            handlers[i][1].set_title(
-                "CQT com resolução de {} bins por oitava.".format(self.resolutions[i]))
+            if show_title:
+                handlers[i][1].set_title("CQT com resolução de {} bins por oitava.".format(self.resolutions[i]))
+            handlers[i][1].set(xlabel='Tempo (s)')
+            handlers[i][1].set(ylabel='Frequência (Hz)')
+            handlers[i][1].set(yticks=[128, 512, 2048])
             handlers[i][0].colorbar(img, ax=handlers[i][1], format="%+2.0f dB")
         fig2, ax2 = plt.subplots()
         img = librosa.display.specshow(librosa.power_to_db(self.combined_tfr, ref=np.max),
@@ -285,21 +290,27 @@ class AudioAnalysis():
         ax2.set_title("Combinação das CQTs usando o {}".format(self.method))
         fig2.colorbar(img, ax=ax2, format="%+2.0f dB")
 
-        plt.show()
+        if show:
+            plt.show()
+        return handlers, fig2, ax2
 
-    def plot(self):
+    def plot(self, show=True):
         """ 
         Chama a função de plot adequada para o tipo das representações tempo-frequenciais (STFT ou CQT).
-        :return: none 
+        :param show (Boolean): Se especificado como falso, não chama plt.show(). Feito para a função que está chamando poder manipular os handlers antes de mostrar os plots. (TODO No momento, manipulação não funcionando)
+        :return: tupla:
+                    - handlers com fig e ax dos plots dos plots de RTFS
+                    - fig do plot da RTFC
+                    - ax do plot da RTFC
         """
         assert self.tfrs_tensor is not None
         assert self.combined_tfr is not None
         assert self.method is not None
 
         if self.tfr_type == "stft":
-            self.plot_stft()
+            return self.plot_stft(show=show)
         else:
-            self.plot_cqt()
+            return self.plot_cqt(show=show)
 
 
 

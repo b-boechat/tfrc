@@ -114,7 +114,7 @@ class AudioAnalysis():
         """
         Calcula o número de pontos e o hop length das STFTs, a partir das resoluções fornecidas para as janelas temporais.
         Os valores calculados são armazenados nos parâmetros correspondentes "n_fft" e "hop_length".
-        O número de pontos utilizado é o dobro da maior resolução, aproximado para a próxima potência de 2.
+        O número de pontos utilizado é a maior resolução, aproximado para a próxima potência de 2.
         O hop length utilizado é 1/2 da menor resolução, aproximado para a próxima potência de 2.
         :param resolutions: Lista de resoluções fornecidas.
         :return: None.
@@ -130,7 +130,7 @@ class AudioAnalysis():
 
         self.hop_length = iter
         
-        while iter < max_resolution * 2:
+        while iter < max_resolution:
             iter *= 2
         
         self.n_fft = iter
@@ -218,14 +218,14 @@ class AudioAnalysis():
 
     #     plt.show()
 
-    def plot_stft(self, y_axis='linear', x_lim=None, y_lim=4000, show_title=False, show=True):
-        plt.rcParams['figure.figsize'] = (18, 9.6)
-        plt.rcParams['axes.labelsize'] = 36
-        plt.rcParams['xtick.labelsize'] = 34
-        plt.rcParams['ytick.labelsize'] = 34
-        plt.rcParams['font.family'] = 'cmr12'
-        plt.rcParams['text.usetex'] = True
-        plt.rcParams['axes.formatter.use_locale'] = True
+    def plot_stft(self, y_axis='linear', x_lim=None, y_lim=None, show_title=True, show=True):
+        #plt.rcParams['figure.figsize'] = (18, 9.6)
+        #plt.rcParams['axes.labelsize'] = 36
+        #plt.rcParams['xtick.labelsize'] = 34
+        #plt.rcParams['ytick.labelsize'] = 34
+        #plt.rcParams['font.family'] = 'cmr12'
+        #plt.rcParams['text.usetex'] = True
+        #plt.rcParams['axes.formatter.use_locale'] = True
 
         num_figures = len(self.resolutions)
         handlers = []

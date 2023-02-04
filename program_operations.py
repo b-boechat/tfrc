@@ -18,7 +18,7 @@ def generate_tfrc(audio_file_path, t_inicio, t_fim,
     audio_analysis.calculate_tfr_combination(combination_method, **combination_params)
     audio_analysis.save_to_file(output_file_path)
 
-    print_arr(audio_analysis.combined_tfr[50:65, 50:65])
+    print_arr(audio_analysis.combined_tfr[48:65, 0:17])
 
     audio_analysis.plot()
 

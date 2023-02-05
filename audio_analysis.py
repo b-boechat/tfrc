@@ -190,43 +190,7 @@ class AudioAnalysis():
         else:
             self.__calculate_cqts()
 
-
-    # def old_plot(self): #TODO Ajeitar essa função
-    #     assert self.tfrs_tensor is not None
-    #     assert self.combined_tfr is not None # TODO transformar asserts em erros.
-    #     assert self.method is not None
-
-    #     num_plots = len(self.resolutions) + 1
-    #     lines, cols, ax_i = AudioAnalysis.__get_iterable_axis_indices(num_plots)
-    #     fig, ax = plt.subplots(lines, cols)
-    #     for i in range(num_plots - 1):
-    #         img = librosa.display.specshow(librosa.amplitude_to_db(self.tfrs_tensor[i], ref=np.max),
-    #                                        y_axis='log', x_axis='time',
-    #                                        hop_length=self.hop_length, sr=self.audio.sample_rate,
-    #                                        ax=ax[ax_i[i][0], ax_i[i][1]])
-    #         ax[ax_i[i][0], ax_i[i][1]].set_title("Spectrogram for {} with window length of {}".format(self.audio.file_path, self.resolutions[i]))
-    #         fig.colorbar(img, ax=ax[ax_i[i][0], ax_i[i][1]], format="%+2.0f dB")
-
-    #     i = num_plots - 1
-
-    #     img = librosa.display.specshow(librosa.amplitude_to_db(self.combined_tfr, ref=np.max),
-    #                                    y_axis='log', x_axis='time',
-    #                                    hop_length=self.hop_length, sr=self.audio.sample_rate,
-    #                                    ax=ax[ax_i[i][0], ax_i[i][1]])
-    #     ax[ax_i[i][0], ax_i[i][1]].set_title("Combination of spectrograms using {}".format(self.method))
-    #     fig.colorbar(img, ax=ax[ax_i[i][0], ax_i[i][1]], format="%+2.0f dB")
-
-    #     plt.show()
-
     def plot_stft(self, y_axis='linear', x_lim=None, y_lim=None, show_title=True, show=True):
-        #plt.rcParams['figure.figsize'] = (18, 9.6)
-        #plt.rcParams['axes.labelsize'] = 36
-        #plt.rcParams['xtick.labelsize'] = 34
-        #plt.rcParams['ytick.labelsize'] = 34
-        #plt.rcParams['font.family'] = 'cmr12'
-        #plt.rcParams['text.usetex'] = True
-        #plt.rcParams['axes.formatter.use_locale'] = True
-
         num_figures = len(self.resolutions)
         handlers = []
         for i in range(num_figures):
@@ -279,7 +243,6 @@ class AudioAnalysis():
                 handlers[i][1].set_title("CQT com resolução de {} bins por oitava.".format(self.resolutions[i]))
             handlers[i][1].set(xlabel='Tempo (s)')
             handlers[i][1].set(ylabel='Frequência (Hz)')
-            handlers[i][1].set(yticks=[128, 512, 2048])
             handlers[i][0].colorbar(img, ax=handlers[i][1], format="%+2.0f dB")
         fig2, ax2 = plt.subplots()
         img = librosa.display.specshow(librosa.power_to_db(self.combined_tfr, ref=np.max),
@@ -294,10 +257,10 @@ class AudioAnalysis():
             plt.show()
         return handlers, fig2, ax2
 
-    def plot(self, show=True):
+    def plot(self, **kwargs):
         """ 
         Chama a função de plot adequada para o tipo das representações tempo-frequenciais (STFT ou CQT).
-        :param show (Boolean): Se especificado como falso, não chama plt.show(). Feito para a função que está chamando poder manipular os handlers antes de mostrar os plots. (TODO No momento, manipulação não funcionando)
+        :param: **kwargs: Argumentos keywords recebidos são passados para a função de plot específica da TFR.
         :return: tupla:
                     - handlers com fig e ax dos plots dos plots de RTFS
                     - fig do plot da RTFC
@@ -308,9 +271,9 @@ class AudioAnalysis():
         assert self.method is not None
 
         if self.tfr_type == "stft":
-            return self.plot_stft(show=show)
+            return self.plot_stft(**kwargs)
         else:
-            return self.plot_cqt(show=show)
+            return self.plot_cqt(**kwargs)
 
 
 

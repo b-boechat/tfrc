@@ -4,9 +4,9 @@ import numpy as np
 cimport cython
 from libc.math cimport INFINITY, pow, log10
 
-#import matplotlib.pyplot as plt
 DEF DEBUGPRINT = 0
 DEF DEBUGTIMER = 0
+DEF DEBUGHISTOGRAM = 0
 
 IF DEBUGPRINT:
     import colorama
@@ -14,6 +14,9 @@ IF DEBUGPRINT:
 
 IF DEBUGTIMER:
     from libc.time cimport clock_t, clock
+
+IF DEBUGHISTOGRAM:
+    import matplotlib.pyplot as plt
 
 
 def local_sparsity_hybrid_wrapper(X, freq_width_energy=15, freq_width_sparsity=39, time_width=11, zeta = 80, double energy_criterium_db=-60):
@@ -120,16 +123,17 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
 
     # ############ }}}
 
-    # plt.figure()
-    # plt.hist(10*np.log10(energy_ndarray[0].flatten()), bins=50)
+    IF DEBUGHISTOGRAM:
+        plt.figure()
+        plt.hist(10*np.log10(energy_ndarray[0].flatten()), bins=50)
 
-    # plt.figure()
-    # plt.hist(10*np.log10(energy_ndarray[1].flatten()), bins=50)
+        plt.figure()
+        plt.hist(10*np.log10(energy_ndarray[1].flatten()), bins=50)
 
-    # plt.figure()
-    # plt.hist(10*np.log10(energy_ndarray[2].flatten()), bins=50)
+        plt.figure()
+        plt.hist(10*np.log10(energy_ndarray[2].flatten()), bins=50)
 
-    # plt.show()
+        plt.show()
 
     #cdef Py_ssize_t count1 = 0, count2 = 0
 
@@ -147,19 +151,16 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
                 if 10*log10(energy[p, red_k, red_m]) > max_local_energy_db:
                     max_local_energy_db = 10*log10(energy[p, red_k, red_m])
             
-            # Se essa energia está abaixo do critério escolhido, realiza combinação por média geométrica.
+            # Se essa energia está abaixo do critério escolhido, realiza combinação por média geométrica. 
             if max_local_energy_db < energy_criterium_db:
                 result[red_k, red_m] = 1.0
                 for p in range(P):
                     result[red_k, red_m] = result[red_k, red_m] * X[p, k, m]
                 result[red_k, red_m] = pow(result[red_k, red_m], 1.0/P)
-
-
                 #count1 = count1 + 1
-            # Caso contrário, realiza a combinação por esparsidade local.
+            # Caso contrário, realiza combinação por LS/SLS (no momento, só SLS implementado)
             else:
                 #count2 = count2 + 1
-
                 for p in range(P):
                     # Copia a região janelada para o vetor de cálculo, multiplicando pelas janelas de Hamming.
                     for i in range(freq_width_sparsity):
@@ -195,7 +196,6 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
 
                 min_local_energy = INFINITY
                 sparsity_product = 1.0
-                red_k, red_m = k - max_freq_width_lobe, m - time_width_lobe
 
                 for p in range(P):
                     sparsity_product = sparsity_product * sparsity[p, red_k, red_m]

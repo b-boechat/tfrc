@@ -31,7 +31,7 @@ cdef fast_local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width, Py_ssize_t ti
 
         double epsilon = 1e-10
 
-        double window_size_sqrt = sqrt(freq_width * time_width)
+        double window_size_sqrt = sqrt(<double> freq_width * time_width)
         double suitability_product, weight, weights_sum
 
     X_ndarray = np.asarray(X)

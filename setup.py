@@ -41,6 +41,10 @@ ext_modules = [
         "fls",
         ["fls.pyx"]
     ),
+    Extension(
+        "fls_hybrid",
+        ["fls_hybrid.pyx"]
+    ),
 
     Extension(
         "swgm",

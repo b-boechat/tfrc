@@ -1,4 +1,5 @@
 # Versão do Fast Local Sparsity que realiza combinação por média geométrica nas regiões de menor energia, para diminuir o custo computacional. No momento, energia L2 ainda é calculada em todo o tensor.
+# Ainda está sendo implementada.
 
 import numpy as np
 from scipy.signal import correlate
@@ -6,7 +7,7 @@ from libc.math cimport pow, sqrt, INFINITY, log10
 cimport cython
 
 DEF DEBUGPRINT = 0
-DEF DEBUGTIMER = 1
+DEF DEBUGTIMER = 0
 DEF DEBUGHISTOGRAM = 0
 
 IF DEBUGHISTOGRAM:
@@ -61,7 +62,7 @@ cdef fast_local_sparsity_hybrid(double[:,:,::1] X, Py_ssize_t freq_width, Py_ssi
 
     local_energy_l1_ndarray = np.zeros((P, K, M), dtype=np.double)
     cdef double[:,:,:] local_energy_l1
-    local_energy_l2_ndarray = np.ones((P, K, M), dtype=np.double)
+    local_energy_l2_ndarray = np.zeros((P, K, M), dtype=np.double)
     cdef double[:,:,:] local_energy_l2
 
     IF DEBUGTIMER:

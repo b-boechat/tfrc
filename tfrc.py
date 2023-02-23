@@ -28,7 +28,8 @@ def generate_tfrc_wrapper(args):
 
     print(args)
 
-    generate_tfrc(audio_file_path=audio_file_path, t_inicio=args.crop_time[0], t_fim=args.crop_time[1], 
+    generate_tfrc(audio_file_path=audio_file_path, 
+                  sample_rate=args.sample_rate, t_inicio=args.crop_time[0], t_fim=args.crop_time[1], 
                   tfr_type=args.tfr_type, 
                   resolutions=args.resolutions,
                   output_file_path=output_file_path,
@@ -92,6 +93,8 @@ def main():
     parser_generate.add_argument("audio_file", metavar="AUDIO_FILE",
                               help=f"""Arquivo de áudio a ser analisado.
                                   Entende-se que está na pasta {audio_folder}, definida na variável \"audio_folder\" em \"definitions.py\"""")  # TODO adicionar opção para gerar arquivos sintéticos
+    parser_generate.add_argument("-s", "--sr", dest="sample_rate", type=float, default=None, 
+                                 help="Taxa de amostragem em que o sinal vai ser reamostrado.")
     parser_generate.add_argument("-c", "--crop", dest="crop_time", type=int, nargs=2, metavar=("inicio", "fim"),
                         default=[None, None],
                         help="Tempo de início e fim (em segundos) demarcando o intervalo analisado.")

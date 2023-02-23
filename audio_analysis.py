@@ -33,17 +33,18 @@ class AudioAnalysis():
             self.plot(): Plota as RTFs e a RTF combinada, em figures separadas. Não pode ser chamada antes de self.calculate_tfr_combinations().
     """
 
-    def __init__(self, audio_file_path, t_inicio=None, t_fim=None, tfr_type="stft", resolutions=[1024, 2048, 4096], count_time=False):
+    def __init__(self, audio_file_path, sample_rate=None, t_inicio=None, t_fim=None, tfr_type="stft", resolutions=[1024, 2048, 4096], count_time=False):
         """
         Instancia um objeto AudioAnalysis a partir de informações sobre o áudio e sobre as representações tempo-frequenciais (RTF).
 
         :param audio_file_path (String): Caminho (absoluto ou relativo) para o áudio no formato .wav
+        :param sample_rate (Number): Taxa de amostragem em que o sinal vai ser reamostrado. Se especificado "None", equivale à taxa nativa. Default: "None"
         :param t_inicio (Number): Tempo inicial a ser analisado do áudio. Se especificado "None", equivale ao início do áudio. Default: "None" 
         :param t_fim (Number): Tempo final a ser analisado do áudio. Se especificado "None", equivale ao fim do áudio. Default: "None" 
         :param resolutions (List): Se tfr_type é "stft" (default): Lista contendo as resoluções (largura da janela) a serem calculadas de DFT. São usadas também para calcular n_fft e hop_length. Se tfr_type é "cqt": Lista contendo as resoluções frequenciais, expressas em número de bins por oitava. Importante notar que as representações são alinhadas para o mesmo número de bins (análogo ao zero-padding da DFT), pelo parâmetro "filter_scale" da CQT. Default: [512, 1024, 2048].
         :param count_time (Boolean): Se verdadeiro, o tempo de cálculo das RTFs (e das combinações, caso self.calculate_tfr_combinations() seja chamada posteriormente) é calculado e mostrado. Default: False
         """
-        self.audio = Audio(audio_file_path, t_inicio, t_fim)
+        self.audio = Audio(audio_file_path, sample_rate, t_inicio, t_fim)
         self.resolutions = resolutions
         self.resolutions.sort()
         self.count_time = count_time
@@ -137,13 +138,13 @@ class AudioAnalysis():
 
     def __set_cqt_params(self):
         """
-        Define o hop size da CQT. Essa função ainda vai ser implementada com detalhe. No momento, é usado 512.
+        Essa função ainda vai ser implementada com detalhe.
         :return: None.
         """
-        self.hop_length = 512
-        self.f_min = 50
+        self.hop_length = 256
+        self.f_min = 27.5
         self.bins_per_octave = self.resolutions[-1] # Alinha as representações com o maior número de bins por oitava especificado.
-        self.n_bins = self.bins_per_octave * 8 # Utilizando 7 oitavas começando em f_min = 50, como é na implementação do Maurício.
+        self.n_bins = 100 * 3
         self.filter_scales = [B/self.bins_per_octave for B in self.resolutions]
 
         #print(self.filter_scales)
@@ -285,24 +286,24 @@ class AudioAnalysis():
 
 
 class Audio:
-    def __init__(self, audio_file_path, t_inicio, t_fim):
+    def __init__(self, audio_file_path, sample_rate, t_inicio, t_fim):
         self.file_path = audio_file_path
         self.t_inicio = t_inicio
         self.t_fim = t_fim
-        self.data, self.sample_rate = self.__load_audio(audio_file_path, t_inicio, t_fim)
+        self.data, self.sample_rate = self.__load_audio(audio_file_path, sample_rate, t_inicio, t_fim)
 
         self.energy = np.linalg.norm(self.data)
 
-    def __load_audio(self, audio_file_path, t_inicio, t_fim):
+    def __load_audio(self, audio_file_path, sample_rate, t_inicio, t_fim):
         if t_inicio and t_fim:
             assert t_fim > t_inicio  #TODO transformar isso em um erro, provavelmente já no init.
-            return librosa.load(audio_file_path, sr=48000, offset=t_inicio, duration=t_fim-t_inicio)
+            return librosa.load(audio_file_path, sr=sample_rate, offset=t_inicio, duration=t_fim-t_inicio)
 
         if t_inicio and not t_fim:
-            return librosa.load(audio_file_path, sr=48000, offset=t_inicio)
+            return librosa.load(audio_file_path, sr=sample_rate, offset=t_inicio)
 
         if not t_inicio and t_fim:
-            return librosa.load(audio_file_path, sr=48000, duration=t_fim)
+            return librosa.load(audio_file_path, sr=sample_rate, duration=t_fim)
 
-        return librosa.load(audio_file_path, sr=48000)
+        return librosa.load(audio_file_path, sr=sample_rate)
 

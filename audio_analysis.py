@@ -191,18 +191,19 @@ class AudioAnalysis():
         else:
             self.__calculate_cqts()
 
-    def plot_stft(self, y_axis='linear', x_lim=None, y_lim=None, show_title=True, show=True):
-        num_figures = len(self.resolutions)
+    def plot_stft(self, y_axis='linear', x_lim=None, y_lim=None, show_title=True, show=True, spec_figures_to_plot=None, plot_combination_figure=True):
+        if spec_figures_to_plot is None:
+            spec_figures_to_plot = range(len(self.resolutions))
         handlers = []
-        for i in range(num_figures):
+        for i, spec in enumerate(spec_figures_to_plot):
             handlers.append(plt.subplots())
-            img = librosa.display.specshow(librosa.power_to_db(self.tfrs_tensor[i], ref=np.max),
+            img = librosa.display.specshow(librosa.power_to_db(self.tfrs_tensor[spec], ref=np.max),
                                            y_axis=y_axis, x_axis='time',
-                                           n_fft=self.n_fft, win_length=self.resolutions[i],
+                                           n_fft=self.n_fft, win_length=self.resolutions[spec],
                                            hop_length=self.hop_length, sr=self.audio.sample_rate,
                                            ax=handlers[i][1], cmap='inferno')
             if show_title:
-                handlers[i][1].set_title("STFT com janela de {} pontos".format(self.resolutions[i]))
+                handlers[i][1].set_title("STFT com janela de {} pontos".format(self.resolutions[spec]))
             handlers[i][1].set(xlabel='Tempo (s)')
             handlers[i][1].set(ylabel='Frequência (Hz)')
             #handlers[i][1].set(xticks=[0, 0.15, 0.30, 0.45, 0.60, 0.75, 0.90])
@@ -212,51 +213,55 @@ class AudioAnalysis():
                 plt.xlim(x_lim)
             if y_lim is not None:
                 plt.ylim(y_lim)
-        fig2, ax2 = plt.subplots()
-        img = librosa.display.specshow(librosa.power_to_db(self.combined_tfr, ref=np.max),
-                                       y_axis=y_axis, x_axis='time',
-                                       n_fft=self.n_fft, win_length=self.resolutions[i],
-                                       hop_length=self.hop_length, sr=self.audio.sample_rate,
-                                       ax=ax2, cmap='inferno')
-        if show_title:
-            ax2.set_title("Combinação das STFTs usando o {}".format(self.method))
-        fig2.colorbar(img, ax=ax2, format="%+2.0f dB")
-        if x_lim is not None:
-                plt.xlim(x_lim)
-        if y_lim is not None:
-                plt.ylim(y_lim)
+        if plot_combination_figure:
+            handlers.append(plt.subplots())
+            img = librosa.display.specshow(librosa.power_to_db(self.combined_tfr, ref=np.max),
+                                        y_axis=y_axis, x_axis='time',
+                                        n_fft=self.n_fft, win_length=self.resolutions[spec],
+                                        hop_length=self.hop_length, sr=self.audio.sample_rate,
+                                        ax=handlers[-1][1], cmap='inferno')
+            if show_title:
+                handlers[-1][1].set_title("Combinação das STFTs usando o {}".format(self.method))
+            handlers[-1][1].set(xlabel='Tempo (s)')
+            handlers[-1][1].set(ylabel='Frequência (Hz)')
+            handlers[-1][0].colorbar(img, ax=handlers[-1][1], format="%+2.0f dB")
+            if x_lim is not None:
+                    plt.xlim(x_lim)
+            if y_lim is not None:
+                    plt.ylim(y_lim)
         if show:
             plt.show()
-        return handlers, fig2, ax2
+        return handlers
 
-    def plot_cqt(self, show_title=False, show=True):
+    def plot_cqt(self, show_title=False, show=True, spec_figures_to_plot=None, plot_combination_figure=True):
         #plt.rcParams['axes.formatter.use_locale'] = True
-        num_figures = len(self.resolutions)
+        if spec_figures_to_plot is None:
+            spec_figures_to_plot = range(len(self.resolutions))
         handlers = []
-        for i in range(num_figures):
+        for i, spec in enumerate(spec_figures_to_plot):
             handlers.append(plt.subplots())
-            img = librosa.display.specshow(librosa.power_to_db(self.tfrs_tensor[i], ref=np.max),
+            img = librosa.display.specshow(librosa.power_to_db(self.tfrs_tensor[spec], ref=np.max),
                                            y_axis='cqt_hz', x_axis='time',
                                            hop_length=self.hop_length, sr=self.audio.sample_rate,
                                            fmin=self.f_min, bins_per_octave=self.bins_per_octave, tuning=0.0,                                  
                                            ax=handlers[i][1])
             if show_title:
-                handlers[i][1].set_title("CQT com resolução de {} bins por oitava.".format(self.resolutions[i]))
+                handlers[i][1].set_title("CQT com resolução de {} bins por oitava.".format(self.resolutions[spec]))
             handlers[i][1].set(xlabel='Tempo (s)')
             handlers[i][1].set(ylabel='Frequência (Hz)')
             handlers[i][0].colorbar(img, ax=handlers[i][1], format="%+2.0f dB")
-        fig2, ax2 = plt.subplots()
-        img = librosa.display.specshow(librosa.power_to_db(self.combined_tfr, ref=np.max),
-                                       y_axis='cqt_hz', x_axis='time',
-                                       hop_length=self.hop_length, sr=self.audio.sample_rate,
-                                       fmin=self.f_min, bins_per_octave=self.bins_per_octave, tuning=0.0,
-                                       ax=ax2)
-        ax2.set_title("Combinação das CQTs usando o {}".format(self.method))
-        fig2.colorbar(img, ax=ax2, format="%+2.0f dB")
-
+        if plot_combination_figure:
+            handlers.append(plt.subplots())
+            img = librosa.display.specshow(librosa.power_to_db(self.combined_tfr, ref=np.max),
+                                        y_axis='cqt_hz', x_axis='time',
+                                        hop_length=self.hop_length, sr=self.audio.sample_rate,
+                                        fmin=self.f_min, bins_per_octave=self.bins_per_octave, tuning=0.0,
+                                        ax=handlers[-1][1])
+            handlers[-1][1].set_title("Combinação das CQTs usando o {}".format(self.method))
+            handlers[-1][0].colorbar(img, ax=handlers[-1][1], format="%+2.0f dB")
         if show:
             plt.show()
-        return handlers, fig2, ax2
+        return handlers
 
     def plot(self, **kwargs):
         """ 

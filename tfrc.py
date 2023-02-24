@@ -35,6 +35,7 @@ def generate_tfrc_wrapper(args):
                   output_file_path=output_file_path,
                   combination_method=args.combination_method,
                   count_time=args.count_time,
+                  plot=args.plot,
                   combination_params=combination_params)
 
     
@@ -116,7 +117,9 @@ def main():
                         help="Se especificado, são exibidos os tempos de cálculo dos espectrogramas e da combinação.")
     #parser_generate.add_argument("-i", "--install", dest="install", action="store_true", 
     #                    help="Provisório. Se especificado, os módulos em Cython são construídos a partir dos arquivos \".pyx\".")
-    parser_generate.add_argument("-p", "--params", dest="combination_params", nargs="+",
+    parser_generate.add_argument("-n", "--noplot", dest="plot", action="store_false",
+                        help="Se especificado, espectrogramas não são apresentados em gráficos.")
+    parser_generate.add_argument("-p", "--params", dest="combination_params", nargs="+", metavar="PARAMS",
                         help="Permite passar argumentos para a função de combinação, na forma <chave>=<valor>. Se especificado, precisa ser a última opção na linha de comando.")
     parser_generate.set_defaults(func=generate_tfrc_wrapper)
 

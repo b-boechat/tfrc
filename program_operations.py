@@ -10,6 +10,7 @@ def generate_tfrc(audio_file_path,
                   output_file_path,
                   combination_method,
                   count_time,
+                  plot,
                   combination_params):
 
     audio_analysis = AudioAnalysis(audio_file_path=audio_file_path, 
@@ -21,7 +22,8 @@ def generate_tfrc(audio_file_path,
 
     print_arr(audio_analysis.combined_tfr[48:65, 0:17])
 
-    audio_analysis.plot()
+    if plot:
+        audio_analysis.plot()
 
 
 def restore_tfrc(input_file_path):

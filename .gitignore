@@ -144,6 +144,7 @@ noname/*
 !noname/sls.py
 !noname/lukintodd.py
 !noname/fhls.py
+!noname/swgm.py
 
 # Implementações em Matlab do Maurício.
 

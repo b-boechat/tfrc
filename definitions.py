@@ -32,6 +32,7 @@ from lukin_todd_baseline import lukin_todd_baseline_wrapper
 
 from fls import fast_local_sparsity_wrapper
 from fls_hybrid import fast_local_sparsity_hybrid_wrapper
+from fls_hybrid_bin import fast_local_sparsity_hybrid_bin_wrapper
 
 from swgm import swgm_wrapper
 
@@ -90,8 +91,10 @@ combination_methods = {
         "name" : "Fast Local Sparsity (Hybrid)",
         "function" : fast_local_sparsity_hybrid_wrapper
     },
-
-
+    "fls_hybrid_bin": {
+        "name" : "Fast Local Sparsity (Hybrid with binwise criterium)",
+        "function" : fast_local_sparsity_hybrid_bin_wrapper
+    },
     "fls_feulo": {
         "name" : "Fast Local Sparsity (Feulo)",
         "function" : feulo_fast_local_sparsity_wrapper
@@ -124,8 +127,12 @@ combination_methods = {
         "name" : "Sample Weighted Geometric Mean",
         "function" : swgm_wrapper
     },
-    "swgm_matlab": {
-        "name" : "Sample Weighted Geometric Mean (Maurício)",
-        "function" : sample_weighted_geometric_mean_matlab_wrapper
+    "swgm_feulo": {
+        "name" : "Sample Weighted Geometric Mean (Feulo)",
+        "function" : swgm_wrapper
     }
+    #"swgm_matlab": {
+    #    "name" : "Sample Weighted Geometric Mean (Maurício)",
+    #    "function" : sample_weighted_geometric_mean_matlab_wrapper
+    #}
 }

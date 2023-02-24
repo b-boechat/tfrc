@@ -13,9 +13,6 @@ DEF DEBUGHISTOGRAM = 0
 IF DEBUGHISTOGRAM:
     import matplotlib.pyplot as plt
 
-
-import matplotlib.pyplot as plt
-
 IF DEBUGPRINT:
     import colorama
     from debug import print_arr
@@ -29,10 +26,10 @@ def fast_local_sparsity_hybrid_wrapper(X, freq_width=39, time_width=11, eta=8.0,
     #print(f"freq_width_sparsity = {freq_width_sparsity}\nfreq_width_energy = {freq_width_energy}\ntime_width = {time_width}\nzeta = {zeta}")
     return fast_local_sparsity_hybrid(X, freq_width, time_width, eta, energy_criterium_db)
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False) 
-#@cython.nonecheck(False)
-#@cython.cdivision(True)
+@cython.boundscheck(False)
+@cython.wraparound(False) 
+@cython.nonecheck(False)
+@cython.cdivision(True)
 cdef fast_local_sparsity_hybrid(double[:,:,::1] X, Py_ssize_t freq_width, Py_ssize_t time_width, double eta, double energy_criterium_db):
 
     cdef:

@@ -18,10 +18,10 @@ def fast_local_sparsity_wrapper(X, freq_width=39, time_width=11, eta=8.0):
     #print(f"freq_width_sparsity = {freq_width_sparsity}\nfreq_width_energy = {freq_width_energy}\ntime_width = {time_width}\nzeta = {zeta}")
     return fast_local_sparsity(X, freq_width, time_width, eta)
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False) 
-#@cython.nonecheck(False)
-#@cython.cdivision(True)
+@cython.boundscheck(False)
+@cython.wraparound(False) 
+@cython.nonecheck(False)
+@cython.cdivision(True)
 cdef fast_local_sparsity(double[:,:,::1] X, Py_ssize_t freq_width, Py_ssize_t time_width, double eta):
 
     cdef:

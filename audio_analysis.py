@@ -12,8 +12,9 @@ class AudioAnalysis():
         Atributos:
             tfrs_tensor (ndarray): Array 3D contendo o tensor de RTFs computados para o áudio. Tem dimensões de Representações x Frequência x Tempo 
             combined_tfr (ndarray): Caso self.calculate_tfr_combination() tenha sido chamada, contém o Array 2D com a RTF combinada para o áudio, nas dimensões Frequência x Tempo. Caso contrário, contém None.
+            tfr_type (String): "stft" ou "cqt"
             method (String): Caso self.calculate_tfr_combination() tenha sido chamada, contém a String que representa o método usado na combinação, de acordo com o dicionário combination_methods. Caso contrário, contém None.
-            hop_size (Number): 
+            hop_length (Number): 
             n_fft (Number):
             audio (AudioAnalysis.Audio): Objeto contendo as informações pertinentes ao sinal de áudio no tempo.
                 audio.data (ndarray): Vetor numérico 1D representando o áudio em forma .wav
@@ -32,6 +33,17 @@ class AudioAnalysis():
             self.save_to_file(file_path): Salva o objeto atual AudioAnalysis no arquivo especificado. 
             self.plot(): Plota as RTFs e a RTF combinada, em figures separadas. Não pode ser chamada antes de self.calculate_tfr_combinations().
     """
+    
+    def __str__(self):
+        # Falta especificar parâmetros de TFR, argumentos pro método etc.
+        return f"""AudioAnalysis object. 
+        audio: "{self.audio.file_path}", sr = {self.audio.sample_rate}, {self.audio.t_inicio if self.audio.t_inicio is not None else 0}:{self.audio.t_fim if self.audio.t_fim is not None else "end"}
+        {self.tfr_type}, res = {self.resolutions}, hop = {self.hop_length}
+        method = {self.method}
+        """
+    
+
+
 
     def __init__(self, audio_file_path, sample_rate=None, t_inicio=None, t_fim=None, tfr_type="stft", resolutions=[1024, 2048, 4096], count_time=False):
         """
@@ -40,7 +52,8 @@ class AudioAnalysis():
         :param audio_file_path (String): Caminho (absoluto ou relativo) para o áudio no formato .wav
         :param sample_rate (Number): Taxa de amostragem em que o sinal vai ser reamostrado. Se especificado "None", equivale à taxa nativa. Default: "None"
         :param t_inicio (Number): Tempo inicial a ser analisado do áudio. Se especificado "None", equivale ao início do áudio. Default: "None" 
-        :param t_fim (Number): Tempo final a ser analisado do áudio. Se especificado "None", equivale ao fim do áudio. Default: "None" 
+        :param t_fim (Number): Tempo final a ser analisado do áudio. Se especificado "None", equivale ao fim do áudio. Default: "None"
+        :param tfr_type (String): "stft" ou "cqt". Default: "stft"
         :param resolutions (List): Se tfr_type é "stft" (default): Lista contendo as resoluções (largura da janela) a serem calculadas de DFT. São usadas também para calcular n_fft e hop_length. Se tfr_type é "cqt": Lista contendo as resoluções frequenciais, expressas em número de bins por oitava. Importante notar que as representações são alinhadas para o mesmo número de bins (análogo ao zero-padding da DFT), pelo parâmetro "filter_scale" da CQT. Default: [512, 1024, 2048].
         :param count_time (Boolean): Se verdadeiro, o tempo de cálculo das RTFs (e das combinações, caso self.calculate_tfr_combinations() seja chamada posteriormente) é calculado e mostrado. Default: False
         """
@@ -199,7 +212,7 @@ class AudioAnalysis():
             handlers.append(plt.subplots())
             img = librosa.display.specshow(librosa.power_to_db(self.tfrs_tensor[spec], ref=np.max),
                                            y_axis=y_axis, x_axis='time',
-                                           n_fft=self.n_fft, win_length=self.resolutions[spec],
+                                           n_fft=self.n_fft, win_length=self.n_fft,
                                            hop_length=self.hop_length, sr=self.audio.sample_rate,
                                            ax=handlers[i][1], cmap='inferno')
             if show_title:
@@ -217,7 +230,7 @@ class AudioAnalysis():
             handlers.append(plt.subplots())
             img = librosa.display.specshow(librosa.power_to_db(self.combined_tfr, ref=np.max),
                                         y_axis=y_axis, x_axis='time',
-                                        n_fft=self.n_fft, win_length=self.resolutions[spec],
+                                        n_fft=self.n_fft, win_length=self.n_fft,
                                         hop_length=self.hop_length, sr=self.audio.sample_rate,
                                         ax=handlers[-1][1], cmap='inferno')
             if show_title:
@@ -280,9 +293,6 @@ class AudioAnalysis():
             return self.plot_stft(**kwargs)
         else:
             return self.plot_cqt(**kwargs)
-
-
-
 
     @classmethod
     def __get_iterable_axis_indices(cls, res_len):

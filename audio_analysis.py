@@ -233,7 +233,7 @@ class AudioAnalysis():
             plt.show()
         return handlers
 
-    def plot_cqt(self, show_title=False, show=True, spec_figures_to_plot=None, plot_combination_figure=True):
+    def plot_cqt(self, show_title=True, show=True, spec_figures_to_plot=None, plot_combination_figure=True):
         #plt.rcParams['axes.formatter.use_locale'] = True
         if spec_figures_to_plot is None:
             spec_figures_to_plot = range(len(self.resolutions))

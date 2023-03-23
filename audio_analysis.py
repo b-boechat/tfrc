@@ -175,7 +175,7 @@ class AudioAnalysis():
     def __calculate_stfts(self):
         self.tfrs_tensor = np.array([librosa.stft(self.audio.data, n_fft=self.n_fft,
                                                     hop_length=self.hop_length, win_length=resolution,
-                                                    window='hamming', center=True
+                                                    window='hann', center=True
                                                     ) for resolution in self.resolutions])
 
         self.tfrs_tensor *= self.audio.energy / np.linalg.norm(self.tfrs_tensor, axis=(1, 2), keepdims=True)
@@ -188,7 +188,7 @@ class AudioAnalysis():
         self.tfrs_tensor = np.array([librosa.cqt(self.audio.data, sr=self.audio.sample_rate,
                                                     hop_length=self.hop_length, fmin=self.f_min, n_bins=self.n_bins,
                                                     bins_per_octave=self.bins_per_octave, tuning=0.0,
-                                                    window='hamming',
+                                                    window='hann',
                                                     filter_scale = filter_scale) for filter_scale in self.filter_scales])
 
         self.tfrs_tensor *= self.audio.energy / np.linalg.norm(self.tfrs_tensor, axis=(1, 2), keepdims=True)

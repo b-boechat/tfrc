@@ -5,7 +5,10 @@ from libc.math cimport pow
 def swgm_wrapper(X, beta=0.3, double max_gamma = 20.0):
     return swgm(X, beta, max_gamma)
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False) 
+@cython.nonecheck(False)
+@cython.cdivision(True)
 cdef swgm(double[:,:,::1] X, double beta, double max_gamma):
 
     cdef:
@@ -32,7 +35,7 @@ cdef swgm(double[:,:,::1] X, double beta, double max_gamma):
                 if gamma > max_gamma:
                     gamma = max_gamma
                 gammas_sum = gammas_sum + gamma
-
+                
                 result[k, m] = result[k, m] * pow(X[p, k, m], gamma)
             
             result[k, m] = pow(result[k, m], 1.0/gammas_sum)

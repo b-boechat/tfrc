@@ -21,8 +21,8 @@ def swgm(spectrograms_tensor, beta, max_alpha):
         spects_matrix_alphas  = spectrograms_tensor ** alphas
         spec_prod_w = spects_matrix_alphas.prod(axis=2)**(1.0/np.sum(alphas, axis=2))
 
-    orig_energy = np.sum(spectrograms_tensor[:,:,0])
-    comb_energy = np.sum(spec_prod_w)
+    #orig_energy = np.sum(spectrograms_tensor[:,:,0])
+    #comb_energy = np.sum(spec_prod_w)
 
-    return (orig_energy/comb_energy) * spec_prod_w
+    return spec_prod_w
 

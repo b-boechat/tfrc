@@ -7,12 +7,13 @@
 from binwise_combination import median_combination, mean_combination
 from feulo_integration import feulo_spectrogram_local_sparsity_wrapper, \
                             feulo_lukin_todd_wrapper, \
-                            feulo_fast_local_sparsity_wrapper
+                            feulo_fast_local_sparsity_wrapper, \
+                            feulo_swgm_wrapper
 from matlab_integration import fast_local_sparsity_matlab_wrapper, \
                             local_sparsity_matlab_wrapper, \
                             fast_local_sparsity_matlab_wrapper, \
-                            lukin_todd_matlab_wrapper, \
-                            sample_weighted_geometric_mean_matlab_wrapper
+                            lukin_todd_matlab_wrapper
+                            #sample_weighted_geometric_mean_matlab_wrapper
 
 
 #import subprocess
@@ -129,7 +130,7 @@ combination_methods = {
     },
     "swgm_feulo": {
         "name" : "Sample Weighted Geometric Mean (Feulo)",
-        "function" : swgm_wrapper
+        "function" : feulo_swgm_wrapper
     }
     #"swgm_matlab": {
     #    "name" : "Sample Weighted Geometric Mean (Maurício)",

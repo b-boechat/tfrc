@@ -16,7 +16,9 @@ from lsm_baseline_interpol import local_sparsity_baseline_interpolation_wrapper
 
 from fls import fast_local_sparsity_wrapper
 
-from feulo_integration import feulo_lukin_todd_wrapper, feulo_spectrogram_local_sparsity_wrapper, feulo_fast_local_sparsity_wrapper
+from swgm import swgm_wrapper
+
+from feulo_integration import feulo_lukin_todd_wrapper, feulo_spectrogram_local_sparsity_wrapper, feulo_fast_local_sparsity_wrapper, feulo_swgm_wrapper
 
 def compare_representations(bkp1_path, bkp2_path, range_i=[1820, 1833], range_j=[24, 35], epsilon = 10e-5):
 
@@ -249,6 +251,14 @@ def test_method(method):
         result_feulo = feulo_fast_local_sparsity_wrapper(arr, freq_width=3, time_width=3, eta=2)   
         print_arr(result_feulo, round_digs=6)
 
+    elif method == "swgm":
+        print("\n\n\n==========\nCython:\n\n=============\n\n\n")
+        result_cython = swgm_wrapper(arr, beta=0.3, max_gamma=20.0)   
+        print_arr(result_cython, round_digs=6)
+
+        print("\n\n\n==========\nFeulo:\n\n=============\n\n\n")
+        result_feulo = feulo_swgm_wrapper(arr, beta=0.3, max_gamma=20.0)   
+        print_arr(result_feulo, round_digs=6)
 
     else:
         print("Especifique o método")
@@ -258,7 +268,7 @@ if __name__ == "__main__":
     #test_method("lt")
     #test_method("lsm")
     #test_method("lsm_interpol")
-    test_method("fls")
+    test_method("swgm")
 
     #compare_representations("backup/normal.bkp", "backup/interpol.bkp", range_i=[1820, 1833], range_j=[24, 35]) # Região de baixa energia, altos erros sem o epsilon.
     #compare_representations("backup/normal.bkp", "backup/interpol.bkp", range_i = [48, 65], range_j = [0, 17]) # Região de alta energia

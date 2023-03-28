@@ -134,7 +134,8 @@ cdef fast_local_sparsity_hybrid_bin(double[:,:,::1] X_orig, Py_ssize_t freq_widt
                     max_local_energy_db = 10*log10(local_energy_l1[p, k, m])
             
             # Se essa energia está abaixo do critério escolhido, realiza combinação por média geométrica.
-            if max_local_energy_db < energy_criterium_db:
+            #if max_local_energy_db < energy_criterium_db:
+            if False: # bypassado por enquanto.
                 #count1 = count1 + 1
                 result[k, m] = 1.0
                 for p in range(P):

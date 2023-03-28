@@ -46,14 +46,5 @@ def swgm_scipy_v4(X, beta=0.3, max_gamma=20.0):
         gammas[p, :, :] = np.exp((sum_ln_holder - np.log(X[p, :, :])*P/(P - 1) ) * beta)
     # =====
     gammas[np.bitwise_or(gammas > max_gamma, np.isnan(gammas))] = max_gamma 
-    return gmean(X, axis=0, weights=gammas)
-
-def swgm_scipy_v5(X, beta=0.3, max_gamma=20.0):
-    P, K, M = X.shape
-    gammas = np.zeros((P, K, M), dtype=np.double)
-    # =====
-    for p in range(P):
-        gammas[p, :, :] = np.exp(np.sum(np.log(np.delete(X, p, axis=0)), axis=0) * beta)
-    # =====
-    gammas[np.bitwise_or(gammas > max_gamma, np.isnan(gammas))] = max_gamma 
+    
     return gmean(X, axis=0, weights=gammas)

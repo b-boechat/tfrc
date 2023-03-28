@@ -35,8 +35,8 @@ from fls import fast_local_sparsity_wrapper
 from fls_hybrid import fast_local_sparsity_hybrid_wrapper
 from fls_hybrid_bin import fast_local_sparsity_hybrid_bin_wrapper
 
-from swgm import swgm_cython_wrapper, swgm_cython_scipy_wrapper
-from swgm_scipy import swgm_scipy_v1, swgm_scipy_v2, swgm_scipy_v3, swgm_scipy_v4, swgm_scipy_v5
+from swgm import swgm_cython_scipy_wrapper, swgm_cython_scipy_presum_wrapper
+from swgm_scipy import swgm_scipy_v1, swgm_scipy_v2, swgm_scipy_v3, swgm_scipy_v4
 
 
 backup_files_extension = ".bkp"
@@ -124,13 +124,13 @@ combination_methods = {
         "name" : "Lukin Todd (Maurício)",
         "function" : lukin_todd_matlab_wrapper 
     },
-    "swgm_cython": {
-        "name" : "Sample Weighted Geometric Mean",
-        "function" : swgm_cython_wrapper
-    },
     "swgm_cython_scipy": {
         "name" : "Sample Weighted Geometric Mean",
         "function" : swgm_cython_scipy_wrapper
+    },
+    "swgm_cython_scipy_presum": {
+        "name" : "Sample Weighted Geometric Mean (Presum)",
+        "function" : swgm_cython_scipy_presum_wrapper
     },
     "swgm_feulo": {
         "name" : "Sample Weighted Geometric Mean (Feulo)",
@@ -152,11 +152,6 @@ combination_methods = {
         "name" : "Sample Weighted Geometric Mean (Scipy v4)",
         "function" : swgm_scipy_v4
     },
-    "swgm_scipy_v5": {
-        "name" : "Sample Weighted Geometric Mean (Scipy v5)",
-        "function" : swgm_scipy_v5
-    },
-
 
     #"swgm_matlab": {
     #    "name" : "Sample Weighted Geometric Mean (Maurício)",

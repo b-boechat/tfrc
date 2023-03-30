@@ -51,6 +51,11 @@ def restore_tfrc_wrapper(args):
 
     restore_tfrc(input_file_path=input_file_path)
 
+
+def list_methods(_):
+    for identifier, value in sorted(combination_methods.items()):
+        print(f"{identifier:25}{value['name']}")
+
 def parse_params(params_str):
 
     #print ("str =", params_str)
@@ -133,6 +138,11 @@ def main():
                               entendida como \"{backup_files_extension}\", definida na variável \"backup_files_extension\" em \"definitions.py\". 
                               Entende-se que está na pasta \"{backup_folder}\", definida na variável \"backup_folder\" em \"definitions.py\"""")
     parser_restore.set_defaults(func=restore_tfrc_wrapper)
+
+
+    parser_list = subparsers.add_parser("list", aliases=["l"],
+                                        help="Lista os métodos de combinação disponíveis.")
+    parser_list.set_defaults(func=list_methods)
 
 
 

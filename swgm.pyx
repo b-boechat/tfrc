@@ -61,14 +61,17 @@ cdef swgm_cython_scipy_presum(double[:,:,::1] X, double beta, double max_gamma):
     log_X_ndarray = np.log(np.asarray(X), dtype=np.double)
     cdef double[:, :, :] log_X = log_X_ndarray
     
-    gammas_ndarray = np.array([np.sum(log_X_ndarray, axis=0) / (P - 1)] * P)
+    sum_log_X_ndarray = np.sum(log_X_ndarray, axis=0) / (P - 1)
+    cdef double[:, :] sum_log_X = sum_log_X_ndarray
+
+    gammas_ndarray = np.empty((P, K, M), dtype=np.double)
     cdef double[:,:,:] gammas = gammas_ndarray
     
     # =====
     for k in range(K):
         for m in range(M):
             for p in range(P):
-                gammas[p, k, m] -= log_X[p, k, m] * P / (P - 1)
+                gammas[p, k, m] = sum_log_X[k, m] - log_X[p, k, m] * P / (P - 1)
                 gammas[p, k, m] = exp(gammas[p, k, m] * beta)
                 if gammas[p, k, m] > max_gamma:
                     gammas[p, k, m] = max_gamma

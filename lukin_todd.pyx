@@ -13,7 +13,7 @@ IF DEBUGPRINT:
 
 
 IF DEBUGTIMER:
-    from libc.time cimport clock_t, clock
+    from libc.time cimport clock_t, clock, CLOCKS_PER_SEC
 
 def lukin_todd_wrapper(X, freq_width=39, time_width=11, eta=8.0):
     return lukin_todd(X, freq_width, time_width, eta)
@@ -40,7 +40,8 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
     IF DEBUGTIMER:
         cdef:
             clock_t time_i, time_f 
-            double timer_initial_copy = 0, timer_initial_sort = 0, timer_new_merge = 0 
+            double timer_initial_copy = 0, timer_initial_sort = 0, timer_merge_horizontal_vecs = 0
+            double timer_heap_merge = 0, timer_smearing = 0, timer_merge_exclusion = 0, timer_combination = 0
 
 
     X_ndarray = np.pad(X_orig, ((0, 0), (freq_width_lobe, freq_width_lobe), (time_width_lobe, time_width_lobe)))
@@ -135,6 +136,9 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
             if m == time_width_lobe:
                 ##### Orderna os vetores horiontais do zero (só é feito uma vez por espectrograma, para os vetores do segmento mais à esquerda.) {{
 
+                IF DEBUGTIMER:
+                    time_i = clock()
+
                 # Itera pelos bins de frequência
                 for k in range(freq_width_lobe, K + freq_width_lobe): # Novamente, não precisa iterar pela região de zero-padding.
 
@@ -151,6 +155,10 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
 
                 ##### }}
 
+                IF DEBUGTIMER:
+                    time_f = clock()
+                    timer_initial_sort = timer_initial_sort + <double> (time_f - time_i)
+                
                 IF DEBUGPRINT:
                     print("Initial sort:")
                     print_arr(calc_region)
@@ -159,6 +167,10 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
 
                 #### Obtém os próximos vetores horizontais, adicionando o elemento em m + time_width_lobe e 
                 # excluindo o originalmente em m - time_width_lobe - 1 {{
+
+                
+                IF DEBUGTIMER:
+                    time_i = clock()
 
                 for k in range(freq_width_lobe, K + freq_width_lobe):
                     # Copia o valor a ser incluído e o valor a ser excluído para as variáveis correspondentes.
@@ -185,6 +197,14 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
 
                 ##### }}
 
+
+                IF DEBUGTIMER:
+                    time_f = clock()
+                    timer_merge_horizontal_vecs = timer_merge_horizontal_vecs + <double> (time_f - time_i)
+
+
+            IF DEBUGTIMER:
+                time_i = clock()
                 
             ##### Realiza o primeiro merge. {{
             combined = combined_odd
@@ -241,6 +261,13 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
 
             ##### }}
 
+            IF DEBUGTIMER:
+                time_f = clock()
+                timer_heap_merge = timer_heap_merge + <double> (time_f - time_i)
+
+            IF DEBUGTIMER:
+                time_i = clock()
+
             ### Cálculo da função de smearing do Lukin-Todd {
 
             smearing_denominator = 0.0
@@ -252,6 +279,10 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
 
             ### }
 
+            IF DEBUGTIMER:
+                time_f = clock()
+                timer_smearing = timer_smearing + <double> (time_f - time_i)
+
             IF DEBUGPRINT:
                 print("Window:")
                 print_arr(X[p], [0, freq_width, m - time_width_lobe, m + time_width_lobe + 1], colorama.Fore.BLUE)
@@ -262,8 +293,11 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
 
             # Itera pelos slices de frequência, exceto o primeiro.
             for k in range(freq_width_lobe + 1, K + freq_width_lobe):
+                
+                IF DEBUGTIMER:
+                    time_i = clock()
 
-                ### { Merge with exclusion
+                ### { Merge com exclusão. É a parte principal de processamento do algoritmo.
 
                 combined, previous_combined = previous_combined, combined
 
@@ -296,6 +330,12 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
 
                 ### }
 
+                IF DEBUGTIMER:
+                    time_f = clock()
+                    timer_merge_exclusion = timer_merge_exclusion + <double> (time_f - time_i)
+
+                IF DEBUGTIMER:
+                    time_i = clock()
 
                 ### Função de smearing {
                 smearing_denominator = 0.0
@@ -307,6 +347,10 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
                 
                 ### }
 
+                IF DEBUGTIMER:
+                    time_f = clock()
+                    timer_smearing = timer_smearing + <double> (time_f - time_i)
+
                 IF DEBUGPRINT:
                     print("Window:")
                     print_arr(X[p], [k - freq_width_lobe, k + freq_width_lobe + 1, m - time_width_lobe, m + time_width_lobe + 1], colorama.Fore.BLUE)
@@ -317,6 +361,10 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
 
     
     ############ }}}
+
+
+    IF DEBUGTIMER:
+        time_i = clock()
 
     ############ Combinação dos espectrogramas {{{
 
@@ -331,6 +379,20 @@ cdef lukin_todd(double[:,:,::1] X_orig, Py_ssize_t freq_width, Py_ssize_t time_w
             result[k, m] = result_acc / weights_sum
 
     ############ }}}
+
+
+    IF DEBUGTIMER:
+        time_f = clock()
+        timer_combination = timer_combination + <double> (time_f - time_i)
+
+    IF DEBUGTIMER:
+        print(f"timer_initial_copy: {timer_initial_copy/CLOCKS_PER_SEC}")
+        print(f"timer_initial_sort: {timer_initial_sort/CLOCKS_PER_SEC}")
+        print(f"timer_merge_horizontal_vecs: {timer_merge_horizontal_vecs/CLOCKS_PER_SEC}")
+        print(f"timer_heap_merge: {timer_heap_merge/CLOCKS_PER_SEC:.8f}")
+        print(f"timer_smearing: {timer_smearing/CLOCKS_PER_SEC}")
+        print(f"timer_merge_exclusion: {timer_merge_exclusion/CLOCKS_PER_SEC}")
+        print(f"timer_combination: {timer_combination/CLOCKS_PER_SEC}")
 
     return result_ndarray
 

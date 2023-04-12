@@ -157,7 +157,7 @@ class AudioAnalysis():
         self.hop_length = 256
         self.f_min = 27.5
         self.bins_per_octave = self.resolutions[-1] # Alinha as representações com o maior número de bins por oitava especificado.
-        self.n_bins = 100 * 3
+        self.n_bins = 103 * 3
         self.filter_scales = [B/self.bins_per_octave for B in self.resolutions]
 
         #print(self.filter_scales)
@@ -178,21 +178,27 @@ class AudioAnalysis():
                                                     window='hann', center=True
                                                     ) for resolution in self.resolutions])
 
-        self.tfrs_tensor *= self.audio.energy / np.linalg.norm(self.tfrs_tensor, axis=(1, 2), keepdims=True)
-
         self.tfrs_tensor = np.square(np.abs(self.tfrs_tensor)).astype(np.double)
+        self.tfrs_tensor *= self.audio.energy / np.sum(self.tfrs_tensor, axis=(1, 2), keepdims=True)
+
+        print(f"audio: {self.audio.energy}")
+        print(f"tensor 1: {np.sum(self.tfrs_tensor[0], axis=None)}")
+        print(f"tensor 2: {np.sum(self.tfrs_tensor[1], axis=None)}")
+        print(f"tensor 3: {np.sum(self.tfrs_tensor[2], axis=None)}")
 
         print(f"tfrs tensor shape={self.tfrs_tensor.shape}")
 
     def __calculate_cqts(self):
+        print("Here?")
+
         self.tfrs_tensor = np.array([librosa.cqt(self.audio.data, sr=self.audio.sample_rate,
                                                     hop_length=self.hop_length, fmin=self.f_min, n_bins=self.n_bins,
                                                     bins_per_octave=self.bins_per_octave, tuning=0.0,
                                                     window='hann',
                                                     filter_scale = filter_scale) for filter_scale in self.filter_scales])
-
-        self.tfrs_tensor *= self.audio.energy / np.linalg.norm(self.tfrs_tensor, axis=(1, 2), keepdims=True)
+        print("Here?")
         self.tfrs_tensor = np.square(np.abs(self.tfrs_tensor)).astype(np.double)
+        self.tfrs_tensor *= self.audio.energy / np.sum(self.tfrs_tensor, axis=(1, 2), keepdims=True)
 
     def __calculate_tfrs(self):
         """
@@ -308,6 +314,7 @@ class Audio:
         self.data, self.sample_rate = self.__load_audio(audio_file_path, sample_rate, t_inicio, t_fim)
 
         self.energy = np.linalg.norm(self.data)
+        self.energy = np.sum(np.square(self.data))
 
     def __load_audio(self, audio_file_path, sample_rate, t_inicio, t_fim):
         if t_inicio and t_fim:

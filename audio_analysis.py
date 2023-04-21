@@ -181,13 +181,6 @@ class AudioAnalysis():
         self.tfrs_tensor = np.square(np.abs(self.tfrs_tensor)).astype(np.double)
         self.tfrs_tensor *= self.audio.energy / np.sum(self.tfrs_tensor, axis=(1, 2), keepdims=True)
 
-        print(f"audio: {self.audio.energy}")
-        print(f"tensor 1: {np.sum(self.tfrs_tensor[0], axis=None)}")
-        print(f"tensor 2: {np.sum(self.tfrs_tensor[1], axis=None)}")
-        print(f"tensor 3: {np.sum(self.tfrs_tensor[2], axis=None)}")
-
-        print(f"tfrs tensor shape={self.tfrs_tensor.shape}")
-
     def __calculate_cqts(self):
         print("Here?")
 

@@ -29,7 +29,7 @@ from fls import fast_local_sparsity_wrapper
 from fls_hybrid import fast_local_sparsity_hybrid_wrapper
 from fls_hybrid_bin import fast_local_sparsity_hybrid_bin_wrapper
 
-from swgm import swgm_cython_scipy_wrapper, swgm_cython_scipy_presum_wrapper
+from swgm import swgm_cython_scipy_wrapper, swgm_cython_scipy_presum_wrapper, swgm_cython_numpy_presum_wrapper
 from swgm_scipy import swgm_scipy_v1, swgm_scipy_v2, swgm_scipy_v3, swgm_scipy_v4
 
 
@@ -113,6 +113,10 @@ combination_methods = {
     "swgm_cython_scipy_presum": {
         "name" : "Sample Weighted Geometric Mean (Presum)",
         "function" : swgm_cython_scipy_presum_wrapper
+    },
+    "swgm_cython_numpy_presum": {
+        "name" : "Sample Weighted Geometric Mean (Presum without scipy.gmean)",
+        "function" : swgm_cython_numpy_presum_wrapper
     },
     "swgm_feulo": {
         "name" : "Sample Weighted Geometric Mean (Feulo)",

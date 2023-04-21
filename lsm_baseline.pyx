@@ -5,14 +5,14 @@ import numpy as np
 cimport cython
 from libc.math cimport INFINITY, pow
 DEF DEBUGPRINT = 0
-DEF DEBUGTIMER = 0
+DEF DEBUGTIMER = 1
 
 IF DEBUGPRINT:
     import colorama
     from debug import print_arr
 
 IF DEBUGTIMER:
-    from libc.time cimport clock_t, clock
+    from libc.time cimport clock_t, clock, CLOCKS_PER_SEC
 
 
 def local_sparsity_baseline_wrapper(X, freq_width_energy=15, freq_width_sparsity=39, time_width=11, zeta = 80):
@@ -45,7 +45,7 @@ cdef local_sparsity_baseline(double[:,:,::1] X_orig, Py_ssize_t freq_width_energ
     IF DEBUGTIMER:
         cdef:
             clock_t time_i, time_f 
-            double timer_initial_copy = 0, timer_initial_sort = 0, timer_new_merge = 0 
+            double timer_sparsity, timer_energy
 
 
     max_freq_width_lobe = freq_width_energy_lobe
@@ -97,14 +97,14 @@ cdef local_sparsity_baseline(double[:,:,::1] X_orig, Py_ssize_t freq_width_energ
 
     ############ Cálculo da função de esparsidade local {{{
 
+    IF DEBUGTIMER:
+        time_i = clock()
+
     # Itera pelos espectrogramas.
     for p in range(P):
         IF DEBUGPRINT:
             print(f"Padded X[{p}]")
             print_arr(X_ndarray[p], [max_freq_width_lobe, K + max_freq_width_lobe, time_width_lobe, M + time_width_lobe], colorama.Fore.CYAN)
-        
-        IF DEBUGTIMER:
-            time_i = clock()
 
         for k in range(max_freq_width_lobe, K + max_freq_width_lobe):
             for m in range(time_width_lobe, M + time_width_lobe):
@@ -131,7 +131,6 @@ cdef local_sparsity_baseline(double[:,:,::1] X_orig, Py_ssize_t freq_width_energ
                 #        j_sort = j_sort - 1
                 #    calc_vector[j_sort + 1] = key        
 
-
                 IF DEBUGPRINT:
                     print("Vetor de cálculo ordenado:")
                     print(list(calc_vector))
@@ -153,8 +152,15 @@ cdef local_sparsity_baseline(double[:,:,::1] X_orig, Py_ssize_t freq_width_energ
     
     # ############ }}}
 
+    IF DEBUGTIMER:
+        time_f = clock()
+        timer_sparsity = (<double> (time_f - time_i) ) / CLOCKS_PER_SEC 
+
 
     ############ Cálculo da função de energia local {{{ 
+
+    IF DEBUGTIMER:
+        time_i = clock()
 
     for p in range(P):
         for k in range(max_freq_width_lobe, K + max_freq_width_lobe):
@@ -174,6 +180,11 @@ cdef local_sparsity_baseline(double[:,:,::1] X_orig, Py_ssize_t freq_width_energ
 
 
     # ############ }}}
+
+    IF DEBUGTIMER:
+        time_f = clock()
+        timer_energy = (<double> (time_f - time_i) ) / CLOCKS_PER_SEC 
+        print(f"Timer sparsity: {timer_sparsity}\nTimer energy: {timer_energy}")
 
     # ############ Combinação por Esparsidade Local e compensação por Energia Local {{
         

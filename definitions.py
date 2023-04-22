@@ -17,7 +17,7 @@ from lsm import local_sparsity_wrapper
 from lsm_baseline import local_sparsity_baseline_wrapper
 
 from lsm_baseline_interpol import local_sparsity_baseline_interpolation_wrapper
-from lsm_interpol_v1 import local_sparsity_interpolation_v1_wrapper
+from lsm_baseline_opt import local_sparsity_baseline_opt_wrapper
 
 from lsm_hybrid import local_sparsity_hybrid_wrapper
 
@@ -56,12 +56,10 @@ combination_methods = {
         "name" : "Local Sparsity Method (Baseline)",
         "function" : local_sparsity_baseline_wrapper
     },
-    
-    "lsm_interpol_v1": {
-        "name" : "Local Sparsity Method with Interpolation (v1)",
-        "function" : local_sparsity_interpolation_v1_wrapper
-    }, 
-
+    "lsm_baseline_opt": {
+        "name" : "Local Sparsity Method (Baseline sparsity with other optimizations)",
+        "function" : local_sparsity_baseline_opt_wrapper
+    },
     "lsm_baseline_interpol": {
         "name" : "Local Sparsity Method with Interpolation (Baseline)",
         "function" : local_sparsity_baseline_interpolation_wrapper

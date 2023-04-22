@@ -1,7 +1,8 @@
-# Versão do Local Sparsity sem otimizações.
+# Versão do Local Sparsity com baseline no cálculo da esparsidade e otimizações nas demais etapas.
 
 
 import numpy as np
+from scipy.signal import correlate
 cimport cython
 from libc.math cimport INFINITY, pow
 DEF DEBUGPRINT = 0
@@ -15,15 +16,15 @@ IF DEBUGTIMER:
     from libc.time cimport clock_t, clock, CLOCKS_PER_SEC
 
 
-def local_sparsity_baseline_wrapper(X, freq_width_energy=15, freq_width_sparsity=39, time_width=11, zeta = 80):
+def local_sparsity_baseline_opt_wrapper(X, freq_width_energy=15, freq_width_sparsity=39, time_width=11, zeta = 80):
     #print(f"freq_width_sparsity = {freq_width_sparsity}\nfreq_width_energy = {freq_width_energy}\ntime_width = {time_width}\nzeta = {zeta}")
-    return local_sparsity_baseline(X, freq_width_energy, freq_width_sparsity, time_width, zeta)
+    return local_sparsity_baseline_opt(X, freq_width_energy, freq_width_sparsity, time_width, zeta)
 
 @cython.boundscheck(False)
 @cython.wraparound(False) 
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef local_sparsity_baseline(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy, Py_ssize_t freq_width_sparsity, Py_ssize_t time_width, double zeta):
+cdef local_sparsity_baseline_opt(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy, Py_ssize_t freq_width_sparsity, Py_ssize_t time_width, double zeta):
 
     cdef:
         Py_ssize_t P = X_orig.shape[0] # Eixo dos espectrogramas
@@ -52,6 +53,7 @@ cdef local_sparsity_baseline(double[:,:,::1] X_orig, Py_ssize_t freq_width_energ
     if freq_width_sparsity_lobe > max_freq_width_lobe:
         max_freq_width_lobe = freq_width_sparsity_lobe  
     
+    X_orig_ndarray = np.asarray(X_orig)
     # Realiza zero-padding no tensor de espectrogramas.
     X_ndarray = np.pad(X_orig, ((0, 0), (max_freq_width_lobe, max_freq_width_lobe), (time_width_lobe, time_width_lobe)))
     cdef double[:, :, :] X = X_ndarray
@@ -63,10 +65,7 @@ cdef local_sparsity_baseline(double[:,:,::1] X_orig, Py_ssize_t freq_width_energ
     hamming_asym_time_ndarray = np.hamming(time_width)
     hamming_asym_time_ndarray[time_width_lobe+1:] = 0
 
-    # hamming_freq_sparsity_ndarray = 2*np.ones(freq_width_sparsity)
-    # hamming_time_ndarray = 3*np.ones(time_width)
-    # hamming_freq_energy_ndarray = 2*np.ones(freq_width_energy)
-    # hamming_asym_time_ndarray = 5*np.ones(time_width)
+    hamming_energy = np.outer(hamming_freq_energy_ndarray, hamming_asym_time_ndarray)
     
     cdef double[:] hamming_freq_energy = hamming_freq_energy_ndarray
     cdef double[:] hamming_freq_sparsity = hamming_freq_sparsity_ndarray
@@ -103,21 +102,13 @@ cdef local_sparsity_baseline(double[:,:,::1] X_orig, Py_ssize_t freq_width_energ
         time_i = clock()
 
     for p in range(P):
-        for k in range(max_freq_width_lobe, K + max_freq_width_lobe):
-           for m in range(time_width_lobe, M + time_width_lobe):
-                # Calcula a energia local no segmento definido por (p, k, m).
-                
-                for i in range(freq_width_energy):
-                   for j in range(time_width):
-                       energy[p, k - max_freq_width_lobe, m - time_width_lobe] = energy[p, k - max_freq_width_lobe, m - time_width_lobe] + X[p, k - freq_width_energy_lobe + i, m - time_width_lobe + j] \
-                           * hamming_freq_energy[i] * hamming_asym_time[j]
+        energy_ndarray[p] = correlate(X_orig_ndarray[p], hamming_energy, mode='same')
 
-                IF DEBUGPRINT:
-                    print_arr(X_ndarray[p], [k - freq_width_energy_lobe, k + freq_width_energy_lobe + 1, m - time_width_lobe, m + time_width_lobe + 1])
-                    print(f"Energy (p = {p}, k = {k} - {max_freq_width_lobe}, m = {m} - {time_width_lobe})")
-                    print_arr(energy_ndarray[p], [k - max_freq_width_lobe, k - max_freq_width_lobe + 1, m - time_width_lobe, m - time_width_lobe + 1])
+        IF DEBUGPRINT:
+            print(f"Energy (p = {p})")
+            print_arr(energy_ndarray[p])
 
-
+    energy = energy_ndarray
 
     # ############ }}}
 

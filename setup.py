@@ -10,10 +10,9 @@ ext_modules = [
         "lsm_baseline",
         ["lsm_baseline.pyx"]
     ),
-
     Extension(
-        "lsm_interpol_v1",
-        ["lsm_interpol_v1.pyx"]
+        "lsm_baseline_opt",
+        ["lsm_baseline_opt.pyx"]
     ),
     Extension(
         "lsm_baseline_interpol",

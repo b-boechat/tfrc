@@ -182,14 +182,12 @@ class AudioAnalysis():
         self.tfrs_tensor *= self.audio.energy / np.sum(self.tfrs_tensor, axis=(1, 2), keepdims=True)
 
     def __calculate_cqts(self):
-        print("Here?")
 
         self.tfrs_tensor = np.array([librosa.cqt(self.audio.data, sr=self.audio.sample_rate,
                                                     hop_length=self.hop_length, fmin=self.f_min, n_bins=self.n_bins,
                                                     bins_per_octave=self.bins_per_octave, tuning=0.0,
                                                     window='hann',
                                                     filter_scale = filter_scale) for filter_scale in self.filter_scales])
-        print("Here?")
         self.tfrs_tensor = np.square(np.abs(self.tfrs_tensor)).astype(np.double)
         self.tfrs_tensor *= self.audio.energy / np.sum(self.tfrs_tensor, axis=(1, 2), keepdims=True)
 

@@ -1,4 +1,4 @@
-# Versão baseline do Local Sparsity, sem otimizações.
+# Versão Local Sparsity com interpolações, sem otimizações.
 
 
 import numpy as np
@@ -216,7 +216,7 @@ cdef local_sparsity_baseline_interpolation(double[:,:,::1] X_orig, Py_ssize_t fr
 
     cdef Py_ssize_t max_row_slice, max_col_slice
 
-    # A interpopulação é feita diferentemente para cada resolução, suponto que estão dispostas da seguinte forma.
+    # A interpolação é feita diferentemente para cada resolução, suponto que estão dispostas da seguinte forma.
     # Índice 0: 1024 pontos: Interpolação de 4 em 4 na frequência.
     # Índice 1: 2048 pontos: Interpolação de 2 em 2 na frequência e 2 em 2 no tempo.
     # Índice 2: 4096 pontos: Interpolação de 4 em 4 no tempo.

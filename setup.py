@@ -19,6 +19,10 @@ ext_modules = [
         ["lsm_baseline_interpol.pyx"]
     ),
     Extension(
+        "lsm_interpol_scipy",
+        ["lsm_interpol_scipy.pyx"]
+    ),
+    Extension(
         "lsm_hybrid",
         ["lsm_hybrid.pyx"]
     ),

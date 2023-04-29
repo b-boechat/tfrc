@@ -151,12 +151,12 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
                 if 10*log10(energy[p, red_k, red_m]) > max_local_energy_db:
                     max_local_energy_db = 10*log10(energy[p, red_k, red_m])
             
-            # Se essa energia está abaixo do critério escolhido, realiza combinação por média geométrica. 
+            # Se essa energia está abaixo do critério escolhido, realiza combinação por minmax. 
             if max_local_energy_db < energy_criterium_db:
-                result[red_k, red_m] = 1.0
+                result[red_k, red_m] = INFINITY
                 for p in range(P):
-                    result[red_k, red_m] = result[red_k, red_m] * X[p, k, m]
-                result[red_k, red_m] = pow(result[red_k, red_m], 1.0/P)
+                    if X[p, k, m] < result[red_k, red_m]:
+                        result[red_k, red_m] = X[p, k, m]
                 #count1 = count1 + 1
             # Caso contrário, realiza combinação por LS/SLS (no momento, só SLS implementado)
             else:
@@ -192,7 +192,7 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
                     # Índice para a matriz de esparsidade local deve ser ajustado porque essa não tem zero-padding.
                     sparsity[p, k - max_freq_width_lobe, m - time_width_lobe] += gini
 
-                # Combinação (smoothed local sparsity):            
+                # Combinação (smoothed local sparsity):   TODO linearizar a conta.      
 
                 min_local_energy = INFINITY
                 sparsity_product = 1.0

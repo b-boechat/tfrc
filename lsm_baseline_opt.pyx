@@ -6,7 +6,7 @@ from scipy.signal import correlate
 cimport cython
 from libc.math cimport INFINITY, exp
 DEF DEBUGPRINT = 0
-DEF DEBUGTIMER = 1
+DEF DEBUGTIMER = 0
 
 IF DEBUGPRINT:
     import colorama
@@ -58,13 +58,14 @@ cdef local_sparsity_baseline_opt(double[:,:,::1] X_orig, Py_ssize_t freq_width_e
     X_ndarray = np.pad(X_orig, ((0, 0), (max_freq_width_lobe, max_freq_width_lobe), (time_width_lobe, time_width_lobe)))
     cdef double[:, :, :] X = X_ndarray
 
-    # Calcula as janelas de Hamming utilizadas no algoritmo, separadamente para cada eixo.
+    # Calcula as janelas de Hamming utilizadas no algoritmo. Para a esparsidade, elas são separadas para cada eixo.
+    
     hamming_freq_energy_ndarray = np.hamming(freq_width_energy)
     hamming_freq_sparsity_ndarray = np.hamming(freq_width_sparsity)
     hamming_time_ndarray = np.hamming(time_width)
     hamming_asym_time_ndarray = np.hamming(time_width)
     hamming_asym_time_ndarray[time_width_lobe+1:] = 0
-
+    
     hamming_energy = np.outer(hamming_freq_energy_ndarray, hamming_asym_time_ndarray)
     
     cdef double[:] hamming_freq_sparsity = hamming_freq_sparsity_ndarray
@@ -203,8 +204,19 @@ cdef local_sparsity_baseline_opt(double[:,:,::1] X_orig, Py_ssize_t freq_width_e
             for k in range(K): 
                 for m in range(M):
                     combination_weight[p, k, m] = exp( (2*log_sparsity[p, k, m] - sum_log_sparsity[k, m]) * zeta)
-        
+
         result_ndarray = np.average(X_orig_ndarray * np.min(energy_ndarray, axis=0)/energy_ndarray, axis=0, weights=combination_weight_ndarray)
+
+        #for k in range(K):
+        #    for m in range(M):
+        #        if (k == 55):
+        #            print(k, m)
+        #            print(combination_weight_ndarray[:, k, m])
+        #            print(X_orig_ndarray[:, k, m])
+        #            print(energy_ndarray[:, k, m])
+        #            print(np.min(energy_ndarray, axis=0)[k, m])
+        #            print(f"{result[k, m]:.10f}")
+        #            input('.')
 
 
     ############ }} Combinação por Esparsidade Local e compensação por Energia Local

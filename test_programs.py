@@ -14,6 +14,8 @@ from lsm_baseline import local_sparsity_baseline_wrapper
 from lsm_baseline_opt import local_sparsity_baseline_opt_wrapper
 from lsm_baseline_interpol import local_sparsity_baseline_interpolation_wrapper
 
+from lsm_hybrid import local_sparsity_hybrid_wrapper
+
 from fls import fast_local_sparsity_wrapper
 
 from swgm import swgm_cython_scipy_wrapper
@@ -195,16 +197,6 @@ def test_method(method):
     #arr = create_2d_arr()
     arr = create_3d_arr()
 
-    #arr = np.arange(3*7*6).reshape(3, 7, 6).astype(np.double) + 1
-    
-    print("p = 0:") 
-    print_arr(arr[0])
-    print("p = 1:") 
-    print_arr(arr[1])
-    #print("p = 2:") 
-    #print_arr(arr[2])
-
-
     if method == "lt":
         print("Lukin-Todd")
 
@@ -247,6 +239,20 @@ def test_method(method):
         result_interpol = local_sparsity_baseline_interpolation_wrapper(arr, freq_width_energy=3, freq_width_sparsity=3, time_width=3, zeta=10)
 
 
+    elif method == "lsm_hybrid":
+        print("\n\n\n==========\nCython baseline:\n\n=============\n\n\n")
+        result_cython = local_sparsity_baseline_wrapper(arr, freq_width_energy=3, freq_width_sparsity=3, time_width=3, zeta=10)     
+        print_arr(result_cython)
+
+        print("\n\n\n==========\nLSM Baseline opt:\n\n=============\n\n\n")
+        result_opt = local_sparsity_baseline_opt_wrapper(arr, freq_width_energy=3, freq_width_sparsity=3, time_width=3, zeta=10)       
+        print_arr(result_opt)
+
+        print("\n\n\n==========\nLSM Hybrid:\n\n=============\n\n\n")
+        result_hybrid = local_sparsity_hybrid_wrapper(arr, freq_width_energy=3, freq_width_sparsity=3, time_width=3, zeta=10, energy_criterium_db=-80)  
+        print_arr(result_hybrid)
+
+
     elif method == "fls":
         print("\n\n\n==========\nCython:\n\n=============\n\n\n")
         result_cython = fast_local_sparsity_wrapper(arr, freq_width=3, time_width=3, eta=2)   
@@ -271,7 +277,7 @@ def test_method(method):
 
 if __name__ == "__main__":
     #test_method("lt")
-    test_method("lsm")
+    test_method("lsm_hybrid")
     #test_method("lsm_interpol")
     #test_method("swgm")
 

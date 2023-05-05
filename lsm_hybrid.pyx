@@ -1,8 +1,9 @@
 # Versão do Local Sparsity que realiza combinação por média geométrica nas regiões de menor energia, para diminuir o custo computacional.
 
 import numpy as np
+from scipy.signal import correlate
 cimport cython
-from libc.math cimport INFINITY, pow, log10
+from libc.math cimport INFINITY, exp, log10
 
 DEF DEBUGPRINT = 0
 DEF DEBUGTIMER = 0
@@ -20,7 +21,6 @@ IF DEBUGHISTOGRAM:
 
 
 def local_sparsity_hybrid_wrapper(X, freq_width_energy=15, freq_width_sparsity=39, time_width=11, zeta = 80, double energy_criterium_db=-60):
-    #print(f"freq_width_sparsity = {freq_width_sparsity}\nfreq_width_energy = {freq_width_energy}\ntime_width = {time_width}\nzeta = {zeta}")
     return local_sparsity_hybrid(X, freq_width_energy, freq_width_sparsity, time_width, zeta, energy_criterium_db)
 
 @cython.boundscheck(False)
@@ -40,9 +40,6 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
         Py_ssize_t time_width_lobe = (time_width-1)//2
         Py_ssize_t p, m, k, i, j
 
-        #Py_ssize_t i_sort, j_sort
-        #double key
-
         double epsilon = 1e-10
         Py_ssize_t combined_size_sparsity = time_width * freq_width_sparsity
 
@@ -56,6 +53,7 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
     if freq_width_sparsity_lobe > max_freq_width_lobe:
         max_freq_width_lobe = freq_width_sparsity_lobe  
     
+    X_orig_ndarray = np.asarray(X_orig)
     # Realiza zero-padding no tensor de espectrogramas.
     X_ndarray = np.pad(X_orig, ((0, 0), (max_freq_width_lobe, max_freq_width_lobe), (time_width_lobe, time_width_lobe)))
     cdef double[:, :, :] X = X_ndarray
@@ -67,14 +65,9 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
     hamming_asym_time_ndarray = np.hamming(time_width)
     hamming_asym_time_ndarray[time_width_lobe+1:] = 0
 
-    # hamming_freq_sparsity_ndarray = 2*np.ones(freq_width_sparsity)
-    # hamming_time_ndarray = 3*np.ones(time_width)
-    # hamming_freq_energy_ndarray = 2*np.ones(freq_width_energy)
-    # hamming_asym_time_ndarray = 5*np.ones(time_width)
+    hamming_energy = np.outer(hamming_freq_energy_ndarray, hamming_asym_time_ndarray)
     
-    cdef double[:] hamming_freq_energy = hamming_freq_energy_ndarray
     cdef double[:] hamming_freq_sparsity = hamming_freq_sparsity_ndarray
-    cdef double[:] hamming_asym_time = hamming_asym_time_ndarray
     cdef double[:] hamming_time = hamming_time_ndarray
     
     
@@ -87,39 +80,38 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
     cdef double[:, :] result = result_ndarray
 
     # Variáveis referentes ao cálculo da função de esparsidade
-    sparsity_ndarray = epsilon * np.ones((P, K, M), dtype=np.double)
-    cdef double[:,:,:] sparsity = sparsity_ndarray
+    sparsity_ndarray = epsilon * np.ones(P, dtype=np.double)
+    cdef double[:] sparsity = sparsity_ndarray
     cdef double arr_norm, gini
 
     energy_ndarray = epsilon * np.ones((P, K, M), dtype=np.double)
     cdef double[:,:,:] energy = energy_ndarray
 
 
-
     # Variáveis referentes à combinação dos espectrogramas.
-    cdef double max_sparsity, min_local_energy, choosen_tfr_local_energy, sparsity_product, sparsity_ratio, sparsity_ratio_sum
+    cdef double[:] log_sparsity
+    cdef double sum_log_sparsity
+    combination_weight_ndarray = np.empty(P, dtype=np.double)
+    cdef double[:] combination_weight = combination_weight_ndarray
+    cdef double min_local_energy
+    cdef double weights_sum
 
     # Variável utilizada para o critério híbrido.
     cdef double max_local_energy_db
 
     ############ Cálculo da função de energia local {{{ 
 
+    IF DEBUGPRINT:
+        print("Hamming window energy:")
+        print_arr(np.outer(hamming_freq_energy_ndarray, hamming_asym_time_ndarray))
+
+    IF DEBUGTIMER:
+        time_i = clock()
+
     for p in range(P):
-        for k in range(max_freq_width_lobe, K + max_freq_width_lobe):
-           for m in range(time_width_lobe, M + time_width_lobe):
-                # Calcula a energia local no segmento definido por (p, k, m).
-                
-                for i in range(freq_width_energy):
-                   for j in range(time_width):
-                       energy[p, k - max_freq_width_lobe, m - time_width_lobe] = energy[p, k - max_freq_width_lobe, m - time_width_lobe] + X[p, k - freq_width_energy_lobe + i, m - time_width_lobe + j] \
-                           * hamming_freq_energy[i] * hamming_asym_time[j]
+        energy_ndarray[p] = correlate(X_orig_ndarray[p], hamming_energy, mode='same')
 
-                IF DEBUGPRINT:
-                    print_arr(X_ndarray[p], [k - freq_width_energy_lobe, k + freq_width_energy_lobe + 1, m - time_width_lobe, m + time_width_lobe + 1])
-                    print(f"Energy (p = {p}, k = {k} - {max_freq_width_lobe}, m = {m} - {time_width_lobe})")
-                    print_arr(energy_ndarray[p], [k - max_freq_width_lobe, k - max_freq_width_lobe + 1, m - time_width_lobe, m - time_width_lobe + 1])
-
-
+    energy = energy_ndarray
 
     # ############ }}}
 
@@ -137,7 +129,7 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
 
     #cdef Py_ssize_t count1 = 0, count2 = 0
 
-    ############ Cálculo da função de esparsidade local e combinação {{{
+    ############ Combinação híbrida {{{
 
     # Itera pelos espectrogramas.
     
@@ -152,12 +144,14 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
                     max_local_energy_db = 10*log10(energy[p, red_k, red_m])
             
             # Se essa energia está abaixo do critério escolhido, realiza combinação por minmax. 
-            if max_local_energy_db < energy_criterium_db:
+            if False: # TODO debugging.
+            #if max_local_energy_db < energy_criterium_db:
                 result[red_k, red_m] = INFINITY
                 for p in range(P):
                     if X[p, k, m] < result[red_k, red_m]:
                         result[red_k, red_m] = X[p, k, m]
                 #count1 = count1 + 1
+
             # Caso contrário, realiza combinação por LS/SLS (no momento, só SLS implementado)
             else:
                 #count2 = count2 + 1
@@ -190,28 +184,29 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
                     gini = 1 + gini/(arr_norm + epsilon)
 
                     # Índice para a matriz de esparsidade local deve ser ajustado porque essa não tem zero-padding.
-                    sparsity[p, k - max_freq_width_lobe, m - time_width_lobe] += gini
+                    sparsity[p] = epsilon + gini
 
-                # Combinação (smoothed local sparsity):   TODO linearizar a conta.      
+                # Combinação (smoothed local sparsity apenas implementado):
+
+                log_sparsity_ndarray = np.log(sparsity_ndarray)
+                sum_log_sparsity = np.sum(log_sparsity_ndarray)
+
+                log_sparsity = log_sparsity_ndarray
 
                 min_local_energy = INFINITY
-                sparsity_product = 1.0
-
+                weights_sum = 0.0
                 for p in range(P):
-                    sparsity_product = sparsity_product * sparsity[p, red_k, red_m]
+                    combination_weight[p] = exp( (2*log_sparsity[p] - sum_log_sparsity) * zeta)
+                    weights_sum += combination_weight[p]
                     if energy[p, red_k, red_m] < min_local_energy:
                         min_local_energy = energy[p, red_k, red_m]
-                
-                sparsity_ratio_sum = epsilon
 
+                result[red_k, red_m] = 0.0
                 for p in range(P):
-                    sparsity_ratio = pow(sparsity[p, red_k, red_m] * sparsity[p, red_k, red_m] / sparsity_product, zeta)
-                    sparsity_ratio_sum += sparsity_ratio
-                    result[red_k, red_m] += X[p, k, m] * sparsity_ratio *  min_local_energy / energy[p, red_k, red_m]
-                
-                result[red_k, red_m] /= sparsity_ratio_sum
+                    result[red_k, red_m] = result[red_k, red_m] + X_orig[p, red_k, red_m] * combination_weight[p] * min_local_energy / energy[p, red_k, red_m]
+                result[red_k, red_m] = result[red_k, red_m] / weights_sum
 
-    
+
     #print(count1)
     #print(count2)
 

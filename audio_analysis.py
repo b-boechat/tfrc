@@ -105,11 +105,12 @@ class AudioAnalysis():
             time_f = default_timer()
             print(f"Combination execution time: {time_f - time_i:.3f}s")
 
-        #print(f"Soma = {np.sum(self.combined_tfr, axis=None)}")
-        #print(f"Fator = {self.audio.energy/np.sum(self.combined_tfr, axis=None)}")
 
         self.combined_tfr *= self.audio.energy/np.sum(self.combined_tfr, axis=None)
+       
         self.method = combination_methods[method]["name"]
+        print(f"Specs tensor shape: {self.tfrs_tensor.shape}")
+
 
     def save_to_file(self, file_path, confirmation=True):
         """
@@ -154,6 +155,9 @@ class AudioAnalysis():
         Essa função ainda vai ser implementada com detalhe.
         :return: None.
         """
+
+
+        # Parâmetros para o TCC, com resolutions 12, 24, 36.
         self.hop_length = 256
         self.f_min = 27.5
         self.bins_per_octave = self.resolutions[-1] # Alinha as representações com o maior número de bins por oitava especificado.
@@ -291,10 +295,10 @@ class AudioAnalysis():
         else:
             return self.plot_cqt(**kwargs)
 
-    @classmethod
-    def __get_iterable_axis_indices(cls, res_len):
-        lines, cols = 2, 2 # TODO mudar isso depois usando res_len
-        return lines, cols, list(map(lambda i: (i//cols, i%cols), range(lines*cols))) # TODO Mudar isso, esse list de map não tá legal.
+    #@classmethod
+    # def __get_iterable_axis_indices(cls, res_len):
+    #    lines, cols = 2, 2 # TODO mudar isso depois usando res_len
+    #    return lines, cols, list(map(lambda i: (i//cols, i%cols), range(lines*cols))) # TODO Mudar isso, esse list de map não tá legal.
 
 
 class Audio:

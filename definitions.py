@@ -26,11 +26,11 @@ from lukin_todd import lukin_todd_wrapper
 from lukin_todd_v1 import lukin_todd_v1_wrapper
 from lukin_todd_baseline import lukin_todd_baseline_wrapper
 
-from fls import fast_local_sparsity_wrapper
+from fls import fast_local_sparsity_wrapper, fast_local_sparsity_opt_wrapper
 from fls_hybrid import fast_local_sparsity_hybrid_wrapper
 from fls_hybrid_bin import fast_local_sparsity_hybrid_bin_wrapper
 
-from swgm import swgm_cython_scipy_wrapper, swgm_cython_scipy_presum_wrapper, swgm_cython_numpy_presum_wrapper
+from swgm import swgm_cython_scipy_wrapper, swgm_cython_scipy_presum_wrapper, swgm_cython_numpy_presum_wrapper, swgm_cython_pow_wrapper
 from swgm_scipy import swgm_scipy_v1, swgm_scipy_v2, swgm_scipy_v3, swgm_scipy_v4
 
 
@@ -81,6 +81,10 @@ combination_methods = {
         "name" : "Fast Local Sparsity",
         "function" : fast_local_sparsity_wrapper
     },
+    "fls_opt": {
+        "name" : "Fast Local Sparsity (Weights calculation linearized)",
+        "function" : fast_local_sparsity_opt_wrapper
+    },
     "fls_hybrid": {
         "name" : "Fast Local Sparsity (Hybrid)",
         "function" : fast_local_sparsity_hybrid_wrapper
@@ -120,6 +124,10 @@ combination_methods = {
     "swgm_cython_numpy_presum": {
         "name" : "Sample Weighted Geometric Mean (Presum without scipy.gmean)",
         "function" : swgm_cython_numpy_presum_wrapper
+    },
+    "swgm_cython_pow": {
+        "name" : "Sample Weighted Geometric Mean (Old version without linearization)",
+        "function" : swgm_cython_pow_wrapper
     },
     "swgm_feulo": {
         "name" : "Sample Weighted Geometric Mean (Feulo)",

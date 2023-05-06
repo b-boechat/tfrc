@@ -8,6 +8,7 @@ from libc.math cimport INFINITY, exp, log10
 DEF DEBUGPRINT = 0
 DEF DEBUGTIMER = 0
 DEF DEBUGHISTOGRAM = 0
+DEF DEBUGCOUNT = 0
 
 IF DEBUGPRINT:
     import colorama
@@ -20,7 +21,7 @@ IF DEBUGHISTOGRAM:
     import matplotlib.pyplot as plt
 
 
-def local_sparsity_hybrid_wrapper(X, freq_width_energy=15, freq_width_sparsity=39, time_width=11, zeta = 80, double energy_criterium_db=-60):
+def local_sparsity_hybrid_wrapper(X, freq_width_energy=11, freq_width_sparsity=21, time_width=11, zeta = 80, double energy_criterium_db=-50):
     return local_sparsity_hybrid(X, freq_width_energy, freq_width_sparsity, time_width, zeta, energy_criterium_db)
 
 @cython.boundscheck(False)
@@ -115,6 +116,12 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
 
     # ############ }}}
 
+    IF DEBUGCOUNT:
+        over_criterium = np.sum(10*np.log10(np.max(energy_ndarray, axis=0)) >= energy_criterium_db)
+        proportion = over_criterium/(K * M)
+        print(over_criterium, proportion)
+
+
     IF DEBUGHISTOGRAM:
         plt.figure()
         plt.hist(10*np.log10(energy_ndarray[0].flatten()), bins=50)
@@ -126,6 +133,8 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
         plt.hist(10*np.log10(energy_ndarray[2].flatten()), bins=50)
 
         plt.show()
+
+        input(".")
 
     #cdef Py_ssize_t count1 = 0, count2 = 0
 
@@ -144,17 +153,14 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
                     max_local_energy_db = 10*log10(energy[p, red_k, red_m])
             
             # Se essa energia está abaixo do critério escolhido, realiza combinação por minmax. 
-            if False: # TODO debugging.
-            #if max_local_energy_db < energy_criterium_db:
+            if max_local_energy_db < energy_criterium_db:
                 result[red_k, red_m] = INFINITY
                 for p in range(P):
                     if X[p, k, m] < result[red_k, red_m]:
                         result[red_k, red_m] = X[p, k, m]
-                #count1 = count1 + 1
 
             # Caso contrário, realiza combinação por LS/SLS (no momento, só SLS implementado)
             else:
-                #count2 = count2 + 1
                 for p in range(P):
                     # Copia a região janelada para o vetor de cálculo, multiplicando pelas janelas de Hamming.
                     for i in range(freq_width_sparsity):
@@ -205,10 +211,6 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
                 for p in range(P):
                     result[red_k, red_m] = result[red_k, red_m] + X_orig[p, red_k, red_m] * combination_weight[p] * min_local_energy / energy[p, red_k, red_m]
                 result[red_k, red_m] = result[red_k, red_m] / weights_sum
-
-
-    #print(count1)
-    #print(count2)
 
     # ############ }}}
 

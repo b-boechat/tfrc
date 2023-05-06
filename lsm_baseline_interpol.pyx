@@ -95,7 +95,16 @@ cdef local_sparsity_baseline_interpolation(double[:,:,::1] X_orig, Py_ssize_t fr
     cdef Py_ssize_t[:,:] interpolation_steps = interpolation_steps_ndarray
 
     # Variáveis referentes à combinação dos espectrogramas.
-    cdef double max_sparsity, min_local_energy, choosen_tfr_local_energy, sparsity_product, sparsity_ratio, sparsity_ratio_sum
+    cdef double[:,:] min_energy
+    cdef Py_ssize_t[:,:] choosen_p
+
+    cdef double[:, :, :] log_sparsity
+    cdef double[:, :] sum_log_sparsity
+
+    combination_weight_ndarray = np.empty((P, K, M), dtype=np.double)
+    cdef double[:, :, :] combination_weight = combination_weight_ndarray
+
+
 
     ############ Cálculo da função de energia local {{{ 
 
@@ -290,55 +299,35 @@ cdef local_sparsity_baseline_interpolation(double[:,:,::1] X_orig, Py_ssize_t fr
             print("Interpolado")
             print_arr(sparsity[p])
 
+
     # ############ Combinação por Esparsidade Local e compensação por Energia Local {{
-        
+     
     if zeta < 0: # Local Sparsity Method (not smoothed)
+        
+        min_energy_ndarray = np.min(energy_ndarray, axis=0)
+        min_energy = min_energy_ndarray
+
+        choosen_p_ndarray = np.argmax(sparsity_ndarray, axis=0)
+        choosen_p = choosen_p_ndarray
+
         for k in range(K): 
             for m in range(M):
-                max_sparsity = -1.0
-                min_local_energy = INFINITY
-                for p in range(P):
-                    if sparsity[p, k, m] > max_sparsity:
-                        result[k, m] = X[p, k + max_freq_width_lobe, m + time_width_sparsity_lobe]
-                        max_sparsity = sparsity[p, k, m]
-                        choosen_tfr_local_energy = energy[p, k, m]      
-                    if energy[p, k, m] < min_local_energy:
-                        min_local_energy = energy[p, k, m]
-                result[k, m] *= min_local_energy/choosen_tfr_local_energy
+                result[k, m] = X_orig[choosen_p[k, m], k, m] * min_energy[k, m] / energy[p, k, m]
 
     else: # Smoothed Local Sparsity Method
 
-        # Itera pelos bins de frequência.
-        for k in range(K): 
-            # Itera pelos segmentos temporais.
-            for m in range(M):
-                # Calcula a menor energia local e o produto de esparsidades locais, iterando pelos espectrogramas.
-                IF DEBUGPRINT:
-                    print(f"\n\nk = {k}, m = {m}\n")
+        log_sparsity_ndarray = np.log(sparsity_ndarray)
+        sum_log_sparsity_ndarray = np.sum(log_sparsity_ndarray, axis=0)
 
-                min_local_energy = INFINITY
-                sparsity_product = 1.0
-                for p in range(P):
-                    sparsity_product *= sparsity[p, k, m]
-                    if energy[p, k, m] < min_local_energy:
-                        min_local_energy = energy[p, k, m]
-                IF DEBUGPRINT:
-                    print(f"sparsity product = {sparsity_product:.2f}, min_local_energy = {min_local_energy:.2f}")
+        log_sparsity = log_sparsity_ndarray
+        sum_log_sparsity = sum_log_sparsity_ndarray
 
-                # Itera pelos espectrogramas novamente, calculando a razão de esparsidade e computando o resultado incrementalmente.
-                sparsity_ratio_sum = epsilon
-                for p in range(P):
-                    sparsity_ratio = pow(sparsity[p, k, m] * sparsity[p, k, m] / sparsity_product, zeta) # Dois fatores sparsity[p, k, m] para removê-lo do produto.
+        for p in range(P):
+            for k in range(K): 
+                for m in range(M):
+                    combination_weight[p, k, m] = exp( (2*log_sparsity[p, k, m] - sum_log_sparsity[k, m]) * zeta)
 
-                    IF DEBUGPRINT:
-                        print(f"sparsity ratio (p = {p}) = {sparsity_ratio:.2f}")
-
-                    sparsity_ratio_sum += sparsity_ratio 
-                    result[k, m] += X[p, k + max_freq_width_lobe, m + time_width_sparsity_lobe] * sparsity_ratio *  min_local_energy / energy[p, k, m]
-
-                # Divide o resultado pela soma das razões de esparsidade. 
-                result[k, m] /= sparsity_ratio_sum 
-
+        result_ndarray = np.average(X_orig_ndarray * np.min(energy_ndarray, axis=0)/energy_ndarray, axis=0, weights=combination_weight_ndarray)
 
     ############ }} Combinação por Esparsidade Local e compensação por Energia Local
 

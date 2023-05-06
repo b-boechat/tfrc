@@ -60,7 +60,6 @@ cdef local_sparsity_baseline_opt(double[:,:,::1] X_orig, Py_ssize_t freq_width_e
     cdef double[:, :, :] X = X_ndarray
 
     # Calcula as janelas de Hamming utilizadas no algoritmo. Para a esparsidade, elas são separadas para cada eixo.
-    
     hamming_freq_energy_ndarray = np.hamming(freq_width_energy)
     hamming_freq_sparsity_ndarray = np.hamming(freq_width_sparsity)
     hamming_time_ndarray = np.hamming(time_width_sparsity)

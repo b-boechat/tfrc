@@ -1,4 +1,4 @@
-# Versão Local Sparsity com interpolações, sem otimizações.
+# Versão Local Sparsity com interpolações, atualmente não funcionando.
 
 
 import numpy as np

@@ -7,7 +7,7 @@ from libc.math cimport INFINITY, exp, log10
 
 DEF DEBUGPRINT = 0
 DEF DEBUGTIMER = 0
-DEF DEBUGHISTOGRAM = 0
+DEF DEBUGHISTOGRAM = 1
 DEF DEBUGCOUNT = 0
 
 IF DEBUGPRINT:
@@ -21,14 +21,14 @@ IF DEBUGHISTOGRAM:
     import matplotlib.pyplot as plt
 
 
-def local_sparsity_hybrid_wrapper(X, freq_width_energy=11, freq_width_sparsity=21, time_width=11, zeta = 80, double energy_criterium_db=-50):
-    return local_sparsity_hybrid(X, freq_width_energy, freq_width_sparsity, time_width, zeta, energy_criterium_db)
+def local_sparsity_hybrid_wrapper(X, freq_width_energy=11, freq_width_sparsity=21, time_width_energy=11, time_width_sparsity=11, zeta = 80, double energy_criterium_db=-50):
+    return local_sparsity_hybrid(X, freq_width_energy, freq_width_sparsity, time_width_energy, time_width_sparsity, zeta, energy_criterium_db)
 
 @cython.boundscheck(False)
 @cython.wraparound(False) 
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy, Py_ssize_t freq_width_sparsity, Py_ssize_t time_width, double zeta, double energy_criterium_db):
+cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy, Py_ssize_t freq_width_sparsity, Py_ssize_t time_width_energy, Py_ssize_t time_width_sparsity, double zeta, double energy_criterium_db):
 
     cdef:
         Py_ssize_t P = X_orig.shape[0] # Eixo dos espectrogramas
@@ -38,11 +38,12 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
         Py_ssize_t freq_width_energy_lobe = (freq_width_energy-1)//2
         Py_ssize_t freq_width_sparsity_lobe = (freq_width_sparsity-1)//2
         Py_ssize_t max_freq_width_lobe
-        Py_ssize_t time_width_lobe = (time_width-1)//2
+        Py_ssize_t time_width_sparsity_lobe = (time_width_sparsity-1)//2
+        Py_ssize_t time_width_energy_lobe = (time_width_energy-1)//2
         Py_ssize_t p, m, k, i, j
 
         double epsilon = 1e-10
-        Py_ssize_t combined_size_sparsity = time_width * freq_width_sparsity
+        Py_ssize_t combined_size_sparsity = time_width_sparsity * freq_width_sparsity
 
     IF DEBUGTIMER:
         cdef:
@@ -56,15 +57,15 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
     
     X_orig_ndarray = np.asarray(X_orig)
     # Realiza zero-padding no tensor de espectrogramas.
-    X_ndarray = np.pad(X_orig, ((0, 0), (max_freq_width_lobe, max_freq_width_lobe), (time_width_lobe, time_width_lobe)))
+    X_ndarray = np.pad(X_orig, ((0, 0), (max_freq_width_lobe, max_freq_width_lobe), (time_width_sparsity_lobe, time_width_sparsity_lobe)))
     cdef double[:, :, :] X = X_ndarray
 
     # Calcula as janelas de Hamming utilizadas no algoritmo, separadamente para cada eixo.
     hamming_freq_energy_ndarray = np.hamming(freq_width_energy)
     hamming_freq_sparsity_ndarray = np.hamming(freq_width_sparsity)
-    hamming_time_ndarray = np.hamming(time_width)
-    hamming_asym_time_ndarray = np.hamming(time_width)
-    hamming_asym_time_ndarray[time_width_lobe+1:] = 0
+    hamming_time_ndarray = np.hamming(time_width_sparsity)
+    hamming_asym_time_ndarray = np.hamming(time_width_energy)
+    hamming_asym_time_ndarray[time_width_energy_lobe+1:] = 0
 
     hamming_energy = np.outer(hamming_freq_energy_ndarray, hamming_asym_time_ndarray)
     
@@ -134,17 +135,13 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
 
         plt.show()
 
-        input(".")
-
-    #cdef Py_ssize_t count1 = 0, count2 = 0
-
     ############ Combinação híbrida {{{
 
     # Itera pelos espectrogramas.
     
     for k in range(max_freq_width_lobe, K + max_freq_width_lobe):
-        for m in range(time_width_lobe, M + time_width_lobe):
-            red_k, red_m = k - max_freq_width_lobe, m - time_width_lobe # Apenas por simplicidade.
+        for m in range(time_width_sparsity_lobe, M + time_width_sparsity_lobe):
+            red_k, red_m = k - max_freq_width_lobe, m - time_width_sparsity_lobe # Apenas por simplicidade.
 
             # Encontra a maior energia local.
             max_local_energy_db = -INFINITY
@@ -164,8 +161,8 @@ cdef local_sparsity_hybrid(double[:,:,::1] X_orig, Py_ssize_t freq_width_energy,
                 for p in range(P):
                     # Copia a região janelada para o vetor de cálculo, multiplicando pelas janelas de Hamming.
                     for i in range(freq_width_sparsity):
-                        for j in range(time_width):
-                            calc_vector[i*time_width + j] = X[p, k - freq_width_sparsity_lobe + i, m - time_width_lobe + j] * \
+                        for j in range(time_width_sparsity):
+                            calc_vector[i*time_width_sparsity + j] = X[p, k - freq_width_sparsity_lobe + i, m - time_width_sparsity_lobe + j] * \
                                     hamming_freq_sparsity[i] * hamming_time[j]        
 
                     IF DEBUGPRINT:

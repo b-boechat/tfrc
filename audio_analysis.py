@@ -271,7 +271,10 @@ class AudioAnalysis():
                                         hop_length=self.hop_length, sr=self.audio.sample_rate,
                                         fmin=self.f_min, bins_per_octave=self.bins_per_octave, tuning=0.0,
                                         ax=handlers[-1][1])
-            handlers[-1][1].set_title("Combinação das CQTs usando o {}".format(self.method))
+            if show_title:
+                handlers[-1][1].set_title("Combinação das CQTs usando o {}".format(self.method))
+            handlers[-1][1].set(xlabel='Tempo (s)')
+            handlers[-1][1].set(ylabel='Frequência (Hz)')
             handlers[-1][0].colorbar(img, ax=handlers[-1][1], format="%+2.0f dB")
         if show:
             plt.show()
